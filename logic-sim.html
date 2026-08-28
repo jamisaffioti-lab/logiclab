@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LogicLab — Digital Circuit Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #1a1d23;
+  --panel: #22262e;
+  --panel2: #2a2f3a;
+  --border: #353a47;
+  --border2: #424857;
+  --accent: #00b4d8;
+  --accent2: #0077a8;
+  --green: #2ecc71;
+  --red: #e74c3c;
+  --yellow: #f1c40f;
+  --text: #d6dce8;
+  --text2: #8a93a8;
+  --text3: #555f75;
+  --wire-hi: #2ecc71;
+  --wire-lo: #3a4255;
+  --wire-w: 2.5px;
+  --comp-bg: #2d3344;
+  --comp-border: #4a5268;
+  --comp-sel: #00b4d8;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'IBM Plex Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── TOPBAR ── */
+#topbar {
+  height: 44px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 0;
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.logo {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+  margin-right: 20px;
+  white-space: nowrap;
+}
+.logo span { color: var(--text2); font-weight: 400; }
+
+.menu-group {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  margin-right: 8px;
+}
+
+.menu-btn {
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px;
+  padding: 0 10px;
+  height: 100%;
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+  transition: color 0.15s, background 0.15s;
+}
+.menu-btn:hover { color: var(--text); background: var(--panel2); }
+
+.sep { width: 1px; height: 24px; background: var(--border); margin: 0 6px; }
+
+.toolbar-btn {
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: 18px;
+  width: 34px;
+  height: 34px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+.toolbar-btn:hover { color: var(--text); background: var(--panel2); }
+.toolbar-btn.active { color: var(--accent); background: rgba(0,180,216,0.12); }
+
+#status-bar {
+  margin-left: auto;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text3);
+  white-space: nowrap;
+}
+#status-msg { color: var(--text2); }
+
+/* ── MAIN LAYOUT ── */
+#workspace {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── LEFT PANEL ── */
+#left-panel {
+  width: 200px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.panel-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 10px 12px 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+#component-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+#component-list::-webkit-scrollbar { width: 4px; }
+#component-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.comp-category {
+  padding: 8px 12px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+
+.comp-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  cursor: grab;
+  border-radius: 4px;
+  margin: 1px 6px;
+  transition: background 0.12s;
+  font-size: 13px;
+  color: var(--text2);
+}
+.comp-item:hover { background: var(--panel2); color: var(--text); }
+.comp-item:active { cursor: grabbing; }
+
+.comp-icon {
+  width: 28px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* ── CANVAS AREA ── */
+#canvas-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(0,180,216,0.03) 0%, transparent 70%),
+    var(--bg);
+}
+
+#grid-canvas {
+  position: absolute;
+  top: 0; left: 0;
+  pointer-events: none;
+}
+
+#main-canvas {
+  position: absolute;
+  top: 0; left: 0;
+  cursor: default;
+}
+
+/* ── RIGHT PANEL ── */
+#right-panel {
+  width: 220px;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+#props-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+#props-content::-webkit-scrollbar { width: 4px; }
+#props-content::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.prop-row {
+  margin-bottom: 10px;
+}
+.prop-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 3px;
+}
+.prop-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 4px 7px;
+}
+.prop-value.editable {
+  cursor: text;
+  outline: none;
+  width: 100%;
+}
+.prop-value.editable:focus { border-color: var(--accent); }
+
+.truth-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  margin-top: 6px;
+}
+.truth-table th {
+  background: var(--panel2);
+  color: var(--text3);
+  padding: 3px 6px;
+  text-align: center;
+  border: 1px solid var(--border);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+.truth-table td {
+  padding: 3px 6px;
+  text-align: center;
+  border: 1px solid var(--border);
+  color: var(--text2);
+}
+.truth-table tr.hi td { color: var(--green); }
+
+/* ── SAVED CIRCUITS ── */
+#saved-panel {
+  border-top: 1px solid var(--border);
+  max-height: 160px;
+  overflow-y: auto;
+}
+#saved-panel::-webkit-scrollbar { width: 4px; }
+#saved-panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.saved-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--text2);
+  cursor: pointer;
+  border-radius: 3px;
+  margin: 2px 6px;
+  transition: background 0.12s;
+}
+.saved-item:hover { background: var(--panel2); color: var(--text); }
+.saved-item-del {
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 2px;
+  line-height: 1;
+}
+.saved-item-del:hover { color: var(--red); }
+
+/* ── BOTTOM STATUS ── */
+#bottom-bar {
+  height: 22px;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 16px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.bb-item { display: flex; align-items: center; gap: 5px; }
+.bb-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+.bb-dot.lo { background: var(--text3); }
+
+/* ── MODAL / DIALOG ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 999;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 20px;
+  min-width: 280px;
+  box-shadow: var(--shadow);
+}
+.modal h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+.modal input {
+  width: 100%;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  padding: 7px 10px;
+  outline: none;
+  margin-bottom: 14px;
+}
+.modal input:focus { border-color: var(--accent); }
+.modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
+.btn {
+  padding: 6px 16px;
+  border-radius: 4px;
+  border: none;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent2); }
+.btn-ghost { background: var(--panel2); color: var(--text2); }
+.btn-ghost:hover { background: var(--border2); color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div class="logo">Logic<span>Lab</span></div>
+
+  <div class="menu-group">
+    <button class="menu-btn" onclick="newCircuit()">New</button>
+    <button class="menu-btn" onclick="openSaveModal()">Save</button>
+    <button class="menu-btn" onclick="exportJSON()">Export</button>
+    <button class="menu-btn" onclick="document.getElementById('import-input').click()">Import</button>
+    <input type="file" id="import-input" accept=".json" style="display:none" onchange="importJSON(event)">
+  </div>
+
+  <div class="sep"></div>
+
+  <button class="toolbar-btn" title="Select (V)" id="tool-select" onclick="setTool('select')" style="font-size:14px;">▲</button>
+  <button class="toolbar-btn" title="Wire (W)" id="tool-wire" onclick="setTool('wire')" style="font-size:13px;">∿</button>
+  <button class="toolbar-btn" title="Delete selected (Del)" onclick="deleteSelected()" style="font-size:14px;">🗑</button>
+  <button class="toolbar-btn" title="Rotate selected (R)" onclick="rotateSelected()" style="font-size:14px;">↻</button>
+
+  <div class="sep"></div>
+
+  <button class="toolbar-btn" title="Zoom In" onclick="zoom(1.15)" style="font-size:16px;">+</button>
+  <button class="toolbar-btn" title="Zoom Out" onclick="zoom(0.87)" style="font-size:16px;">−</button>
+  <button class="toolbar-btn" title="Fit view" onclick="fitView()" style="font-size:13px;">⊡</button>
+
+  <div class="sep"></div>
+
+  <button class="toolbar-btn" title="Simulate (Space)" id="sim-btn" onclick="toggleSim()" style="font-size:14px;">▶</button>
+
+  <div id="status-bar">
+    <span id="status-msg">Ready</span>
+  </div>
+</div>
+
+<!-- WORKSPACE -->
+<div id="workspace">
+
+  <!-- LEFT: COMPONENT PALETTE -->
+  <div id="left-panel">
+    <div class="panel-title">Components</div>
+    <div id="component-list">
+
+      <div class="comp-category">Inputs / Outputs</div>
+      <div class="comp-item" draggable="true" data-type="switch">
+        <svg class="comp-icon" viewBox="0 0 28 20"><rect x="2" y="7" width="24" height="6" rx="3" fill="none" stroke="#8a93a8" stroke-width="1.5"/><circle cx="20" cy="10" r="3.5" fill="#2ecc71"/><line x1="0" y1="10" x2="2" y2="10" stroke="#8a93a8" stroke-width="1.5"/><line x1="26" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>
+        Switch
+      </div>
+      <div class="comp-item" draggable="true" data-type="clock">
+        <svg class="comp-icon" viewBox="0 0 28 20"><rect x="2" y="4" width="24" height="12" rx="2" fill="none" stroke="#8a93a8" stroke-width="1.5"/><polyline points="5,14 5,10 9,10 9,6 13,6 13,10 17,10 17,6 21,6 21,10 25,10" fill="none" stroke="#00b4d8" stroke-width="1.5"/></svg>
+        Clock
+      </div>
+      <div class="comp-item" draggable="true" data-type="led">
+        <svg class="comp-icon" viewBox="0 0 28 20"><circle cx="14" cy="10" r="6" fill="none" stroke="#8a93a8" stroke-width="1.5"/><circle cx="14" cy="10" r="3" fill="#e74c3c" opacity="0.7"/><line x1="0" y1="10" x2="8" y2="10" stroke="#8a93a8" stroke-width="1.5"/><line x1="20" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5" opacity="0.3"/></svg>
+        LED
+      </div>
+      <div class="comp-item" draggable="true" data-type="7seg">
+        <svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" rx="2" fill="none" stroke="#8a93a8" stroke-width="1.3"/><text x="14" y="15" text-anchor="middle" fill="#f1c40f" font-size="12" font-family="monospace">8</text></svg>
+        7-Segment
+      </div>
+      <div class="comp-item" draggable="true" data-type="vcc">
+        <svg class="comp-icon" viewBox="0 0 28 20"><line x1="14" y1="18" x2="14" y2="10" stroke="#8a93a8" stroke-width="1.5"/><line x1="8" y1="10" x2="20" y2="10" stroke="#2ecc71" stroke-width="2"/><text x="14" y="8" text-anchor="middle" fill="#2ecc71" font-size="8" font-family="monospace">VCC</text></svg>
+        VCC (HIGH)
+      </div>
+      <div class="comp-item" draggable="true" data-type="gnd">
+        <svg class="comp-icon" viewBox="0 0 28 20"><line x1="14" y1="2" x2="14" y2="10" stroke="#8a93a8" stroke-width="1.5"/><line x1="8" y1="10" x2="20" y2="10" stroke="#8a93a8" stroke-width="2"/><line x1="10" y1="13" x2="18" y2="13" stroke="#8a93a8" stroke-width="1.5"/><line x1="12" y1="16" x2="16" y2="16" stroke="#8a93a8" stroke-width="1.5"/></svg>
+        GND (LOW)
+      </div>
+
+      <div class="comp-category">Logic Gates</div>
+      <div class="comp-item" draggable="true" data-type="and">
+        <svg class="comp-icon" viewBox="0 0 28 20"><path d="M4 4 L14 4 Q22 4 22 10 Q22 16 14 16 L4 16 Z" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="7" x2="4" y2="7" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="13" x2="4" y2="13" stroke="#8a93a8" stroke-width="1.5"/><line x1="22" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>
+        AND
+      </div>
+      <div class="comp-item" draggable="true" data-type="or">
+        <svg class="comp-icon" viewBox="0 0 28 20"><path d="M4 4 Q9 4 14 4 Q22 4 22 10 Q22 16 14 16 Q9 16 4 16 Q8 10 4 4 Z" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="7" x2="5" y2="7" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="13" x2="5" y2="13" stroke="#8a93a8" stroke-width="1.5"/><line x1="22" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>
+        OR
+      </div>
+      <div class="comp-item" draggable="true" data-type="not">
+        <svg class="comp-icon" viewBox="0 0 28 20"><polygon points="4,4 20,10 4,16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><circle cx="22" cy="10" r="2" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="10" x2="4" y2="10" stroke="#8a93a8" stroke-width="1.5"/><line x1="24" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>
+        NOT
+      </div>
+      <div class="comp-item" draggable="true" data-type="nand">
+        <svg class="comp-icon" viewBox="0 0 28 20"><path d="M4 4 L13 4 Q20 4 20 10 Q20 16 13 16 L4 16 Z" fill="none" stroke="#8a93a8" stroke-width="1.5"/><circle cx="22" cy="10" r="2" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="7" x2="4" y2="7" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="13" x2="4" y2="13" stroke="#8a93a8" stroke-width="1.5"/><line x1="24" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>
+        NAND
+      </div>
+      <div class="comp-item" draggable="true" data-type="nor">
+        <svg class="comp-icon" viewBox="0 0 28 20"><path d="M4 4 Q9 4 13 4 Q20 4 20 10 Q20 16 13 16 Q9 16 4 16 Q8 10 4 4 Z" fill="none" stroke="#8a93a8" stroke-width="1.5"/><circle cx="22" cy="10" r="2" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="7" x2="5" y2="7" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="13" x2="5" y2="13" stroke="#8a93a8" stroke-width="1.5"/><line x1="24" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>
+        NOR
+      </div>
+      <div class="comp-item" draggable="true" data-type="xor">
+        <svg class="comp-icon" viewBox="0 0 28 20"><path d="M5 4 Q10 4 15 4 Q22 4 22 10 Q22 16 15 16 Q10 16 5 16 Q9 10 5 4 Z" fill="none" stroke="#8a93a8" stroke-width="1.5"/><path d="M2 4 Q6 10 2 16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="7" x2="4" y2="7" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="13" x2="4" y2="13" stroke="#8a93a8" stroke-width="1.5"/><line x1="22" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>
+        XOR
+      </div>
+      <div class="comp-item" draggable="true" data-type="xnor">
+        <svg class="comp-icon" viewBox="0 0 28 20"><path d="M5 4 Q10 4 14 4 Q20 4 20 10 Q20 16 14 16 Q10 16 5 16 Q9 10 5 4 Z" fill="none" stroke="#8a93a8" stroke-width="1.5"/><path d="M2 4 Q6 10 2 16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><circle cx="22" cy="10" r="2" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="7" x2="4" y2="7" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="13" x2="4" y2="13" stroke="#8a93a8" stroke-width="1.5"/><line x1="24" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>
+        XNOR
+      </div>
+
+      <div class="comp-category">ICs / MSI</div>
+      <div class="comp-item" draggable="true" data-type="mux21">
+        <svg class="comp-icon" viewBox="0 0 28 20"><polygon points="2,2 26,6 26,14 2,18" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="7" font-family="monospace">MUX</text></svg>
+        2:1 MUX
+      </div>
+      <div class="comp-item" draggable="true" data-type="mux41">
+        <svg class="comp-icon" viewBox="0 0 28 20"><polygon points="2,2 26,7 26,13 2,18" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">4:1</text></svg>
+        4:1 MUX
+      </div>
+      <div class="comp-item" draggable="true" data-type="demux12">
+        <svg class="comp-icon" viewBox="0 0 28 20"><polygon points="2,6 26,2 26,18 2,14" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">DMX</text></svg>
+        1:2 DEMUX
+      </div>
+      <div class="comp-item" draggable="true" data-type="decoder24">
+        <svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">DEC</text></svg>
+        2-4 Decoder
+      </div>
+      <div class="comp-item" draggable="true" data-type="halfadder">
+        <svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">HA</text></svg>
+        Half Adder
+      </div>
+      <div class="comp-item" draggable="true" data-type="fulladder">
+        <svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">FA</text></svg>
+        Full Adder
+      </div>
+      <div class="comp-item" draggable="true" data-type="dff">
+        <svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="7" font-family="monospace">D-FF</text></svg>
+        D Flip-Flop
+      </div>
+      <div class="comp-item" draggable="true" data-type="jkff">
+        <svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">JK-FF</text></svg>
+        JK Flip-Flop
+      </div>
+      <div class="comp-item" draggable="true" data-type="sr_latch">
+        <svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">SR</text></svg>
+        SR Latch
+      </div>
+      <div class="comp-item" draggable="true" data-type="shift4">
+        <svg class="comp-icon" viewBox="0 0 28 20"><rect x="2" y="4" width="24" height="12" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="13" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">SHIFT</text></svg>
+        4-bit Shift Reg
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CANVAS -->
+  <div id="canvas-wrap">
+    <canvas id="grid-canvas"></canvas>
+    <canvas id="main-canvas"></canvas>
+  </div>
+
+  <!-- RIGHT: PROPERTIES -->
+  <div id="right-panel">
+    <div class="panel-title">Properties</div>
+    <div id="props-content">
+      <div id="no-sel" style="color:var(--text3);font-size:12px;padding:8px 0;">Select a component to view properties.</div>
+      <div id="sel-props" style="display:none"></div>
+    </div>
+    <div class="panel-title" style="margin-top:auto;">Saved Circuits</div>
+    <div id="saved-panel">
+      <div id="saved-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- BOTTOM BAR -->
+<div id="bottom-bar">
+  <div class="bb-item"><div class="bb-dot" id="sim-indicator"></div><span id="sim-label">Simulation: OFF</span></div>
+  <div class="bb-item">Components: <span id="comp-count">0</span></div>
+  <div class="bb-item">Wires: <span id="wire-count">0</span></div>
+  <div class="bb-item" id="cursor-pos">X: 0  Y: 0</div>
+</div>
+
+<!-- SAVE MODAL -->
+<div class="modal-overlay" id="save-modal">
+  <div class="modal">
+    <h3>Save Circuit</h3>
+    <input type="text" id="save-name" placeholder="Circuit name..." maxlength="40">
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeSaveModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCircuit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  LOGICLAB — Digital Circuit Simulator
+//  Full simulation engine with gates, ICs, flip-flops
+// ══════════════════════════════════════════════════════
+
+const canvas = document.getElementById('main-canvas');
+const ctx = canvas.getContext('2d');
+const gridCanvas = document.getElementById('grid-canvas');
+const gctx = gridCanvas.getContext('2d');
+const wrap = document.getElementById('canvas-wrap');
+
+// ── State ──
+let components = [];
+let wires = [];
+let selected = null;
+let tool = 'select';
+let simRunning = false;
+let simInterval = null;
+let clockTick = 0;
+
+// View transform
+let viewX = 0, viewY = 0, viewScale = 1;
+
+// Wire drawing state
+let wireDraw = null; // {fromComp, fromPin, points:[{x,y}]}
+
+// Drag state
+let dragState = null;
+// {type:'move', comp, startX, startY, origX, origY}
+// {type:'canvas', startX, startY, origVX, origVY}
+
+let nextId = 1;
+const GRID = 20;
+
+// ── Resize ──
+function resize() {
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  canvas.width = w; canvas.height = h;
+  gridCanvas.width = w; gridCanvas.height = h;
+  drawGrid();
+  render();
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ── Grid ──
+function drawGrid() {
+  const w = gridCanvas.width, h = gridCanvas.height;
+  gctx.clearRect(0, 0, w, h);
+  gctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  gctx.lineWidth = 1;
+
+  const gs = GRID * viewScale;
+  const ox = ((viewX % gs) + gs) % gs;
+  const oy = ((viewY % gs) + gs) % gs;
+
+  for (let x = ox; x < w; x += gs) {
+    gctx.beginPath(); gctx.moveTo(x, 0); gctx.lineTo(x, h); gctx.stroke();
+  }
+  for (let y = oy; y < h; y += gs) {
+    gctx.beginPath(); gctx.moveTo(0, y); gctx.lineTo(w, y); gctx.stroke();
+  }
+}
+
+// ── Coordinate transforms ──
+function worldToScreen(wx, wy) {
+  return { x: wx * viewScale + viewX, y: wy * viewScale + viewY };
+}
+function screenToWorld(sx, sy) {
+  return { x: (sx - viewX) / viewScale, y: (sy - viewY) / viewScale };
+}
+function snapGrid(v) { return Math.round(v / GRID) * GRID; }
+
+// ── Component definitions ──
+const COMP_DEFS = {
+  // type: {label, inputs:[{name,rel:[dx,dy]}], outputs:[{name,rel:[dx,dy]}], w, h, truthFn}
+  switch:   { label:'SW',    w:60, h:40, inputs:[], outputs:[{name:'Q',rel:[30,0]}], category:'io' },
+  clock:    { label:'CLK',   w:60, h:40, inputs:[], outputs:[{name:'Q',rel:[30,0]}], category:'io' },
+  led:      { label:'LED',   w:50, h:40, inputs:[{name:'A',rel:[-25,0]}], outputs:[], category:'io' },
+  '7seg':   { label:'7SEG',  w:70, h:80, inputs:[{name:'A',rel:[-35,-24]},{name:'B',rel:[-35,-8]},{name:'C',rel:[-35,8]},{name:'D',rel:[-35,24]}], outputs:[], category:'io' },
+  vcc:      { label:'VCC',   w:40, h:30, inputs:[], outputs:[{name:'Q',rel:[0,15]}], category:'io' },
+  gnd:      { label:'GND',   w:40, h:30, inputs:[], outputs:[{name:'Q',rel:[0,-15]}], category:'io' },
+
+  and:  { label:'AND',  w:60, h:40, inputs:[{name:'A',rel:[-30,-10]},{name:'B',rel:[-30,10]}], outputs:[{name:'Q',rel:[30,0]}] },
+  or:   { label:'OR',   w:60, h:40, inputs:[{name:'A',rel:[-30,-10]},{name:'B',rel:[-30,10]}], outputs:[{name:'Q',rel:[30,0]}] },
+  not:  { label:'NOT',  w:50, h:30, inputs:[{name:'A',rel:[-25,0]}], outputs:[{name:'Q',rel:[25,0]}] },
+  nand: { label:'NAND', w:60, h:40, inputs:[{name:'A',rel:[-30,-10]},{name:'B',rel:[-30,10]}], outputs:[{name:'Q',rel:[30,0]}] },
+  nor:  { label:'NOR',  w:60, h:40, inputs:[{name:'A',rel:[-30,-10]},{name:'B',rel:[-30,10]}], outputs:[{name:'Q',rel:[30,0]}] },
+  xor:  { label:'XOR',  w:60, h:40, inputs:[{name:'A',rel:[-30,-10]},{name:'B',rel:[-30,10]}], outputs:[{name:'Q',rel:[30,0]}] },
+  xnor: { label:'XNOR', w:60, h:40, inputs:[{name:'A',rel:[-30,-10]},{name:'B',rel:[-30,10]}], outputs:[{name:'Q',rel:[30,0]}] },
+
+  mux21:   { label:'2:1 MUX',  w:80, h:60, inputs:[{name:'D0',rel:[-40,-15]},{name:'D1',rel:[-40,0]},{name:'S',rel:[-40,15]}], outputs:[{name:'Y',rel:[40,0]}] },
+  mux41:   { label:'4:1 MUX',  w:80, h:80, inputs:[{name:'D0',rel:[-40,-24]},{name:'D1',rel:[-40,-8]},{name:'D2',rel:[-40,8]},{name:'D3',rel:[-40,24]},{name:'S0',rel:[0,40]},{name:'S1',rel:[20,40]}], outputs:[{name:'Y',rel:[40,0]}] },
+  demux12: { label:'1:2 DEMUX',w:80, h:60, inputs:[{name:'D',rel:[-40,0]},{name:'S',rel:[0,30]}], outputs:[{name:'Y0',rel:[40,-15]},{name:'Y1',rel:[40,15]}] },
+  decoder24:{ label:'2-4 DEC', w:80, h:80, inputs:[{name:'A0',rel:[-40,-15]},{name:'A1',rel:[-40,0]},{name:'EN',rel:[-40,15]}], outputs:[{name:'Y0',rel:[40,-24]},{name:'Y1',rel:[40,-8]},{name:'Y2',rel:[40,8]},{name:'Y3',rel:[40,24]}] },
+  halfadder:{ label:'Half Add',w:80, h:60, inputs:[{name:'A',rel:[-40,-15]},{name:'B',rel:[-40,15]}], outputs:[{name:'S',rel:[40,-15]},{name:'Cout',rel:[40,15]}] },
+  fulladder:{ label:'Full Add',w:80, h:60, inputs:[{name:'A',rel:[-40,-15]},{name:'B',rel:[-40,0]},{name:'Cin',rel:[-40,15]}], outputs:[{name:'S',rel:[40,-15]},{name:'Cout',rel:[40,15]}] },
+  dff:   { label:'D-FF',   w:80, h:60, inputs:[{name:'D',rel:[-40,-15]},{name:'CLK',rel:[-40,15]}], outputs:[{name:'Q',rel:[40,-15]},{name:'Q̄',rel:[40,15]}] },
+  jkff:  { label:'JK-FF',  w:80, h:70, inputs:[{name:'J',rel:[-40,-20]},{name:'CLK',rel:[-40,0]},{name:'K',rel:[-40,20]}], outputs:[{name:'Q',rel:[40,-15]},{name:'Q̄',rel:[40,15]}] },
+  sr_latch:{ label:'SR',   w:70, h:60, inputs:[{name:'S',rel:[-35,-15]},{name:'R',rel:[-35,15]}], outputs:[{name:'Q',rel:[35,-15]},{name:'Q̄',rel:[35,15]}] },
+  shift4:{ label:'SHIFT4', w:100, h:80, inputs:[{name:'Sin',rel:[-50,-20]},{name:'CLK',rel:[-50,0]},{name:'clr',rel:[-50,20]}], outputs:[{name:'Q0',rel:[50,-24]},{name:'Q1',rel:[50,-8]},{name:'Q2',rel:[50,8]},{name:'Q3',rel:[50,24]}] },
+};
+
+// ── Truth functions ──
+function computeOutputs(comp) {
+  const ins = comp.inputVals; // array of 0/1
+  const get = i => (ins && ins[i] !== undefined) ? ins[i] : 0;
+  const a = get(0), b = get(1), c = get(2), d = get(3);
+
+  switch (comp.type) {
+    case 'and':  return [a & b];
+    case 'or':   return [a | b];
+    case 'not':  return [a ? 0 : 1];
+    case 'nand': return [(a & b) ? 0 : 1];
+    case 'nor':  return [(a | b) ? 0 : 1];
+    case 'xor':  return [a ^ b];
+    case 'xnor': return [(a ^ b) ? 0 : 1];
+    case 'vcc':  return [1];
+    case 'gnd':  return [0];
+    case 'switch': return [comp.state ? 1 : 0];
+    case 'clock':  return [comp.clockVal !== undefined ? comp.clockVal : 0];
+    case 'led':  return [];
+    case '7seg': return [];
+    case 'mux21': { const s=get(2); return [s ? get(1) : get(0)]; }
+    case 'mux41': {
+      const s = get(4) | (get(5) << 1);
+      return [get(s)];
+    }
+    case 'demux12': { const s=get(1); return s ? [0, get(0)] : [get(0), 0]; }
+    case 'decoder24': {
+      if (!get(2)) return [0,0,0,0];
+      const idx = get(0) | (get(1) << 1);
+      return [idx===0?1:0, idx===1?1:0, idx===2?1:0, idx===3?1:0];
+    }
+    case 'halfadder': return [(a ^ b), (a & b)];
+    case 'fulladder': {
+      const s = a ^ b ^ c;
+      const co = (a & b) | (b & c) | (a & c);
+      return [s, co];
+    }
+    case 'dff': {
+      // Q updates on CLK rising edge — stored in comp.ffState
+      return [comp.ffQ !== undefined ? comp.ffQ : 0, comp.ffQ ? 0 : 1];
+    }
+    case 'jkff': {
+      return [comp.ffQ !== undefined ? comp.ffQ : 0, comp.ffQ ? 0 : 1];
+    }
+    case 'sr_latch': {
+      const s=a, r=b;
+      if (s && r) return [1,1]; // forbidden — show both 1
+      if (s) { comp.ffQ = 1; }
+      if (r) { comp.ffQ = 0; }
+      const q = comp.ffQ !== undefined ? comp.ffQ : 0;
+      return [q, q ? 0 : 1];
+    }
+    case 'shift4': {
+      const qArr = comp.shiftReg || [0,0,0,0];
+      return [...qArr];
+    }
+    default: return [];
+  }
+}
+
+// ── Simulation step ──
+function simStep() {
+  clockTick++;
+
+  // Advance clocks
+  components.forEach(c => {
+    if (c.type === 'clock') {
+      c.clockVal = (clockTick % 2 === 0) ? 1 : 0;
+    }
+  });
+
+  // Multi-pass propagation (handle cascades)
+  for (let pass = 0; pass < 8; pass++) {
+    // Propagate wire values
+    wires.forEach(w => {
+      const src = components.find(c => c.id === w.fromComp);
+      if (!src) return;
+      const outIdx = src.outputPins ? src.outputPins.findIndex(p => p.name === w.fromPin) : -1;
+      const val = (src.outputVals && outIdx >= 0) ? src.outputVals[outIdx] : 0;
+      const dst = components.find(c => c.id === w.toComp);
+      if (!dst) return;
+      const inIdx = COMP_DEFS[dst.type] ? COMP_DEFS[dst.type].inputs.findIndex(p => p.name === w.toPin) : -1;
+      if (inIdx >= 0) {
+        if (!dst.inputVals) dst.inputVals = [];
+        dst.inputVals[inIdx] = val;
+      }
+      w.val = val;
+    });
+
+    // Compute outputs for each component
+    components.forEach(c => {
+      const def = COMP_DEFS[c.type];
+      if (!def) return;
+      if (!c.inputVals) c.inputVals = new Array(def.inputs.length).fill(0);
+
+      // Flip-flop edge detection
+      if (c.type === 'dff') {
+        const clkNow = c.inputVals[1] || 0;
+        if (clkNow && !c.prevClk) { c.ffQ = c.inputVals[0] || 0; }
+        c.prevClk = clkNow;
+      }
+      if (c.type === 'jkff') {
+        const clkNow = c.inputVals[1] || 0;
+        const j = c.inputVals[0] || 0;
+        const k = c.inputVals[2] || 0;
+        if (clkNow && !c.prevClk) {
+          const q = c.ffQ || 0;
+          if (j && !k) c.ffQ = 1;
+          else if (!j && k) c.ffQ = 0;
+          else if (j && k) c.ffQ = q ? 0 : 1;
+        }
+        c.prevClk = clkNow;
+      }
+      if (c.type === 'shift4') {
+        const clkNow = c.inputVals[1] || 0;
+        if (!c.shiftReg) c.shiftReg = [0,0,0,0];
+        if (c.inputVals[2]) { c.shiftReg = [0,0,0,0]; }
+        else if (clkNow && !c.prevClk) {
+          c.shiftReg = [c.inputVals[0] || 0, c.shiftReg[0], c.shiftReg[1], c.shiftReg[2]];
+        }
+        c.prevClk = clkNow;
+      }
+
+      c.outputVals = computeOutputs(c);
+    });
+  }
+
+  render();
+}
+
+function toggleSim() {
+  simRunning = !simRunning;
+  const btn = document.getElementById('sim-btn');
+  const ind = document.getElementById('sim-indicator');
+  const lbl = document.getElementById('sim-label');
+  if (simRunning) {
+    simInterval = setInterval(simStep, 400);
+    btn.textContent = '⏸';
+    btn.classList.add('active');
+    ind.classList.remove('lo');
+    lbl.textContent = 'Simulation: ON';
+    setStatus('Simulation running');
+  } else {
+    clearInterval(simInterval);
+    btn.textContent = '▶';
+    btn.classList.remove('active');
+    ind.classList.add('lo');
+    lbl.textContent = 'Simulation: OFF';
+    setStatus('Simulation paused');
+  }
+}
+
+// ── Add component ──
+function addComponent(type, wx, wy) {
+  const def = COMP_DEFS[type];
+  if (!def) return null;
+  const c = {
+    id: nextId++,
+    type,
+    x: snapGrid(wx),
+    y: snapGrid(wy),
+    rotation: 0,
+    state: false, // for switches
+    ffQ: 0,
+    shiftReg: [0,0,0,0],
+    inputVals: new Array(def.inputs.length).fill(0),
+    outputVals: new Array(def.outputs.length).fill(0),
+    inputPins: def.inputs.map(p => ({...p})),
+    outputPins: def.outputs.map(p => ({...p})),
+    label: def.label,
+    name: def.label + nextId,
+  };
+  components.push(c);
+  updateCounts();
+  return c;
+}
+
+// ── Pin positions (world coords) ──
+function pinWorld(comp, pin) {
+  return { x: comp.x + pin.rel[0], y: comp.y + pin.rel[1] };
+}
+
+function allPins(comp) {
+  const def = COMP_DEFS[comp.type];
+  const pins = [];
+  (comp.inputPins || def.inputs).forEach((p, i) => {
+    pins.push({ ...p, world: pinWorld(comp, p), isOutput: false, idx: i });
+  });
+  (comp.outputPins || def.outputs).forEach((p, i) => {
+    pins.push({ ...p, world: pinWorld(comp, p), isOutput: true, idx: i });
+  });
+  return pins;
+}
+
+// ── Render ──
+function render() {
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  ctx.save();
+  ctx.translate(viewX, viewY);
+  ctx.scale(viewScale, viewScale);
+
+  // Draw wires
+  wires.forEach(wire => drawWire(wire));
+
+  // Wire being drawn
+  if (wireDraw) {
+    ctx.strokeStyle = 'rgba(0,180,216,0.7)';
+    ctx.lineWidth = 2.5 / viewScale;
+    ctx.setLineDash([6 / viewScale, 4 / viewScale]);
+    ctx.beginPath();
+    const pts = wireDraw.points;
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Draw components
+  components.forEach(comp => drawComponent(comp));
+
+  ctx.restore();
+
+  updateCounts();
+}
+
+function drawWire(wire) {
+  const val = wire.val || 0;
+  ctx.strokeStyle = simRunning ? (val ? '#2ecc71' : '#3a4255') : '#556080';
+  ctx.lineWidth = 2.5 / viewScale;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  const pts = wire.points;
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.stroke();
+
+  // Dot at junctions
+  if (wire.junction) {
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.beginPath();
+    ctx.arc(wire.junction.x, wire.junction.y, 3.5 / viewScale, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawComponent(comp) {
+  const def = COMP_DEFS[comp.type];
+  const sel = selected === comp;
+  const x = comp.x, y = comp.y;
+  const hw = def.w / 2, hh = def.h / 2;
+
+  ctx.save();
+  ctx.translate(x, y);
+
+  // Selection glow
+  if (sel) {
+    ctx.shadowColor = '#00b4d8';
+    ctx.shadowBlur = 18 / viewScale;
+  }
+
+  switch (comp.type) {
+    case 'switch': drawSwitch(comp, hw, hh, sel); break;
+    case 'clock':  drawClock(comp, hw, hh, sel); break;
+    case 'led':    drawLED(comp, hw, hh, sel); break;
+    case '7seg':   draw7Seg(comp, hw, hh, sel); break;
+    case 'vcc':    drawVCC(comp, hw, hh, sel); break;
+    case 'gnd':    drawGND(comp, hw, hh, sel); break;
+    case 'and': case 'nand': drawAND(comp, hw, hh, sel); break;
+    case 'or': case 'nor':   drawOR(comp, hw, hh, sel); break;
+    case 'xor': case 'xnor': drawXOR(comp, hw, hh, sel); break;
+    case 'not':    drawNOT(comp, hw, hh, sel); break;
+    default:       drawIC(comp, hw, hh, sel); break;
+  }
+
+  ctx.shadowBlur = 0;
+
+  // Pins
+  allPins(comp).forEach(pin => {
+    const pw = pinWorld(comp, pin);
+    const val = pin.isOutput
+      ? (comp.outputVals && comp.outputVals[pin.idx] || 0)
+      : (comp.inputVals && comp.inputVals[pin.idx] || 0);
+    ctx.fillStyle = simRunning ? (val ? '#2ecc71' : '#3a4255') : '#556080';
+    ctx.beginPath();
+    ctx.arc(pin.rel[0], pin.rel[1], 3.5 / viewScale, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = sel ? '#00b4d8' : '#6a7590';
+    ctx.lineWidth = 1 / viewScale;
+    ctx.stroke();
+
+    // Pin label at small scales skip
+    if (viewScale > 0.6 && def.inputs.length + def.outputs.length <= 6) {
+      ctx.fillStyle = '#8a93a8';
+      ctx.font = `${8 / viewScale}px IBM Plex Mono`;
+      ctx.textAlign = pin.isOutput ? 'left' : 'right';
+      ctx.fillText(pin.name, pin.rel[0] + (pin.isOutput ? 5/viewScale : -5/viewScale), pin.rel[1] + 3/viewScale);
+    }
+  });
+
+  ctx.restore();
+}
+
+function gateStyle(comp, sel) {
+  ctx.fillStyle = '#2d3344';
+  ctx.strokeStyle = sel ? '#00b4d8' : '#5a6480';
+  ctx.lineWidth = 1.8 / viewScale;
+}
+
+function drawAND(comp, hw, hh, sel) {
+  gateStyle(comp, sel);
+  ctx.beginPath();
+  ctx.moveTo(-hw, -hh);
+  ctx.lineTo(0, -hh);
+  ctx.arc(0, 0, hh, -Math.PI/2, Math.PI/2);
+  ctx.lineTo(-hw, hh);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  if (comp.type === 'nand') {
+    ctx.beginPath(); ctx.arc(hw + 5/viewScale, 0, 5/viewScale, 0, Math.PI*2);
+    ctx.fillStyle='#2d3344'; ctx.fill(); ctx.stroke();
+  }
+  ctx.fillStyle='#c8d0e0'; ctx.font=`bold ${10/viewScale}px IBM Plex Sans`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(comp.type==='nand'?'NAND':'AND', -hw/2, 0);
+}
+
+function drawOR(comp, hw, hh, sel) {
+  gateStyle(comp, sel);
+  ctx.beginPath();
+  ctx.moveTo(-hw, -hh);
+  ctx.quadraticCurveTo(0, -hh, hw, 0);
+  ctx.quadraticCurveTo(0, hh, -hw, hh);
+  ctx.quadraticCurveTo(-hw + hh*0.7, 0, -hw, -hh);
+  ctx.fill(); ctx.stroke();
+  if (comp.type === 'nor') {
+    ctx.beginPath(); ctx.arc(hw + 5/viewScale, 0, 5/viewScale, 0, Math.PI*2);
+    ctx.fillStyle='#2d3344'; ctx.fill(); ctx.stroke();
+  }
+  ctx.fillStyle='#c8d0e0'; ctx.font=`bold ${10/viewScale}px IBM Plex Sans`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(comp.type==='nor'?'NOR':'OR', -2/viewScale, 0);
+}
+
+function drawXOR(comp, hw, hh, sel) {
+  gateStyle(comp, sel);
+  ctx.beginPath();
+  ctx.moveTo(-hw+4/viewScale, -hh);
+  ctx.quadraticCurveTo(0, -hh, hw, 0);
+  ctx.quadraticCurveTo(0, hh, -hw+4/viewScale, hh);
+  ctx.quadraticCurveTo(-hw+4/viewScale + hh*0.7, 0, -hw+4/viewScale, -hh);
+  ctx.fill(); ctx.stroke();
+  // extra curve
+  ctx.beginPath();
+  ctx.moveTo(-hw, -hh);
+  ctx.quadraticCurveTo(-hw + hh*0.5, 0, -hw, hh);
+  ctx.stroke();
+  if (comp.type === 'xnor') {
+    ctx.beginPath(); ctx.arc(hw + 5/viewScale, 0, 5/viewScale, 0, Math.PI*2);
+    ctx.fillStyle='#2d3344'; ctx.fill(); ctx.stroke();
+  }
+  ctx.fillStyle='#c8d0e0'; ctx.font=`bold ${10/viewScale}px IBM Plex Sans`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(comp.type==='xnor'?'XNOR':'XOR', 2/viewScale, 0);
+}
+
+function drawNOT(comp, hw, hh, sel) {
+  gateStyle(comp, sel);
+  ctx.beginPath();
+  ctx.moveTo(-hw, -hh);
+  ctx.lineTo(hw - 8/viewScale, 0);
+  ctx.lineTo(-hw, hh);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.arc(hw - 3/viewScale, 0, 5/viewScale, 0, Math.PI*2);
+  ctx.fillStyle='#2d3344'; ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#c8d0e0'; ctx.font=`bold ${9/viewScale}px IBM Plex Sans`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('NOT', -5/viewScale, 0);
+}
+
+function drawSwitch(comp, hw, hh, sel) {
+  const on = comp.state;
+  const onColor = '#2ecc71';
+  ctx.fillStyle = on ? 'rgba(46,204,113,0.15)' : '#2d3344';
+  ctx.strokeStyle = sel ? '#00b4d8' : (on ? onColor : '#5a6480');
+  ctx.lineWidth = 1.8 / viewScale;
+  ctx.beginPath();
+  ctx.roundRect(-hw, -hh, def_w(comp), def_h(comp), 6/viewScale);
+  ctx.fill(); ctx.stroke();
+  // Toggle knob
+  const kx = on ? hw*0.3 : -hw*0.3;
+  ctx.fillStyle = on ? onColor : '#556080';
+  ctx.beginPath();
+  ctx.arc(kx, 0, 8/viewScale, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = '#c8d0e0'; ctx.font = `bold ${9/viewScale}px IBM Plex Sans`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(on ? '1' : '0', 0, 14/viewScale);
+  ctx.fillStyle='#8a93a8'; ctx.font=`${8/viewScale}px IBM Plex Sans`;
+  ctx.fillText(comp.name || 'SW', 0, -14/viewScale);
+}
+
+function drawClock(comp, hw, hh, sel) {
+  const v = (comp.clockVal || 0);
+  ctx.fillStyle = '#2d3344';
+  ctx.strokeStyle = sel ? '#00b4d8' : '#5a6480';
+  ctx.lineWidth = 1.8 / viewScale;
+  ctx.beginPath();
+  ctx.roundRect(-hw, -hh, def_w(comp), def_h(comp), 4/viewScale);
+  ctx.fill(); ctx.stroke();
+  // Clock wave indicator
+  ctx.strokeStyle = simRunning ? (v ? '#2ecc71' : '#3a4255') : '#556080';
+  ctx.lineWidth = 1.5 / viewScale;
+  ctx.beginPath();
+  const bx = -hw + 8/viewScale, by = hh - 8/viewScale, bw = (def_w(comp) - 16/viewScale), bh = 12/viewScale;
+  ctx.moveTo(bx, by);
+  ctx.lineTo(bx, by - bh);
+  ctx.lineTo(bx + bw/2, by - bh);
+  ctx.lineTo(bx + bw/2, by);
+  ctx.lineTo(bx + bw, by);
+  ctx.stroke();
+  ctx.fillStyle='#c8d0e0'; ctx.font=`bold ${9/viewScale}px IBM Plex Sans`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('CLK', 0, -8/viewScale);
+}
+
+function drawLED(comp, hw, hh, sel) {
+  const on = comp.inputVals && comp.inputVals[0];
+  ctx.fillStyle = on ? 'rgba(231,76,60,0.2)' : '#2d3344';
+  ctx.strokeStyle = sel ? '#00b4d8' : (on ? '#e74c3c' : '#5a6480');
+  ctx.lineWidth = 1.8/viewScale;
+  ctx.beginPath();
+  ctx.arc(0, 0, hh, 0, Math.PI*2);
+  ctx.fill(); ctx.stroke();
+  if (on) {
+    ctx.shadowColor = '#e74c3c';
+    ctx.shadowBlur = 20/viewScale;
+  }
+  ctx.fillStyle = on ? '#e74c3c' : '#3a4255';
+  ctx.beginPath(); ctx.arc(0, 0, hh*0.5, 0, Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle='#8a93a8'; ctx.font=`${8/viewScale}px IBM Plex Sans`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(comp.name||'LED', 0, hh + 10/viewScale);
+}
+
+function draw7Seg(comp, hw, hh, sel) {
+  const val = (comp.inputVals||[]).reduce((acc,b,i) => acc|(b<<i), 0) & 0xF;
+  const SEG_ON = '#f1c40f', SEG_OFF = '#2d2d1a';
+  // segments for 0-9
+  const segs = [
+    [1,1,1,1,1,1,0],[0,1,1,0,0,0,0],[1,1,0,1,1,0,1],[1,1,1,1,0,0,1],
+    [0,1,1,0,0,1,1],[1,0,1,1,0,1,1],[1,0,1,1,1,1,1],[1,1,1,0,0,0,0],
+    [1,1,1,1,1,1,1],[1,1,1,1,0,1,1],[1,1,1,0,1,1,1],[0,0,1,1,1,1,1],
+    [1,0,0,1,1,1,0],[0,1,1,1,1,0,1],[1,0,0,1,1,1,1],[1,0,0,0,1,1,1]
+  ];
+  const s = segs[val] || segs[0];
+  ctx.fillStyle = '#1a1a0f';
+  ctx.strokeStyle = sel ? '#00b4d8' : '#5a6480';
+  ctx.lineWidth = 1.8/viewScale;
+  ctx.beginPath(); ctx.roundRect(-hw,-hh,def_w(comp),def_h(comp),4/viewScale); ctx.fill(); ctx.stroke();
+
+  const x0 = -12/viewScale, y0 = -26/viewScale, sw = 24/viewScale, sh = 4/viewScale, sg = 2/viewScale;
+  function seg(x,y,horiz,on) {
+    ctx.fillStyle = on ? SEG_ON : SEG_OFF;
+    ctx.beginPath();
+    if(horiz) ctx.roundRect(x,y,sw,sh,1/viewScale);
+    else ctx.roundRect(x,y,sh,sw,1/viewScale);
+    ctx.fill();
+  }
+  seg(x0+sg, y0, true, s[0]);                        // top
+  seg(x0+sw, y0+sg, false, s[1]);                    // top-right
+  seg(x0+sw, y0+sw+sg*2, false, s[2]);               // bot-right
+  seg(x0+sg, y0+sw*2+sg*2, true, s[3]);             // bot
+  seg(x0-sh, y0+sw+sg*2, false, s[4]);               // bot-left
+  seg(x0-sh, y0+sg, false, s[5]);                    // top-left
+  seg(x0+sg, y0+sw+sg, true, s[6]);                  // mid
+
+  ctx.fillStyle='#8a93a8'; ctx.font=`${7/viewScale}px IBM Plex Sans`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(comp.name||'7SEG', 0, hh-6/viewScale);
+}
+
+function drawVCC(comp, hw, hh, sel) {
+  ctx.strokeStyle = sel ? '#00b4d8' : '#2ecc71';
+  ctx.lineWidth = 2/viewScale;
+  ctx.beginPath(); ctx.moveTo(0, hh); ctx.lineTo(0, 4/viewScale); ctx.stroke();
+  ctx.strokeStyle = sel ? '#00b4d8' : '#2ecc71';
+  ctx.lineWidth = 3/viewScale;
+  ctx.beginPath(); ctx.moveTo(-hw+4/viewScale, 0); ctx.lineTo(hw-4/viewScale, 0); ctx.stroke();
+  ctx.fillStyle='#2ecc71'; ctx.font=`bold ${10/viewScale}px IBM Plex Mono`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('VCC', 0, -12/viewScale);
+}
+
+function drawGND(comp, hw, hh, sel) {
+  ctx.strokeStyle = sel ? '#00b4d8' : '#8a93a8';
+  ctx.lineWidth = 2/viewScale;
+  ctx.beginPath(); ctx.moveTo(0, -hh); ctx.lineTo(0, -4/viewScale); ctx.stroke();
+  [0,1,2].forEach(i => {
+    const w2 = (hw-4/viewScale) - i*(hw-4/viewScale)*0.3;
+    ctx.lineWidth = (2-i*0.5)/viewScale;
+    ctx.beginPath(); ctx.moveTo(-w2, i*5/viewScale); ctx.lineTo(w2, i*5/viewScale); ctx.stroke();
+  });
+  ctx.fillStyle='#8a93a8'; ctx.font=`bold ${10/viewScale}px IBM Plex Mono`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('GND', 0, -hh - 6/viewScale);
+}
+
+function drawIC(comp, hw, hh, sel) {
+  const def = COMP_DEFS[comp.type];
+  ctx.fillStyle = '#232840';
+  ctx.strokeStyle = sel ? '#00b4d8' : '#5a6480';
+  ctx.lineWidth = 1.8/viewScale;
+  ctx.beginPath();
+  ctx.roundRect(-hw, -hh, def.w, def.h, 4/viewScale);
+  ctx.fill(); ctx.stroke();
+  // IC notch
+  ctx.fillStyle='#1a1d23';
+  ctx.beginPath(); ctx.arc(0, -hh, 5/viewScale, 0, Math.PI); ctx.fill();
+
+  ctx.fillStyle='#00b4d8'; ctx.font=`bold ${9/viewScale}px IBM Plex Mono`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(def.label, 0, -4/viewScale);
+  if (comp.name) {
+    ctx.fillStyle='#556080'; ctx.font=`${7/viewScale}px IBM Plex Sans`;
+    ctx.fillText(comp.name, 0, 8/viewScale);
+  }
+}
+
+function def_w(comp) { return COMP_DEFS[comp.type].w; }
+function def_h(comp) { return COMP_DEFS[comp.type].h; }
+
+// ── Hit testing ──
+function hitComp(wx, wy) {
+  for (let i = components.length - 1; i >= 0; i--) {
+    const c = components[i];
+    const def = COMP_DEFS[c.type];
+    if (wx >= c.x - def.w/2 && wx <= c.x + def.w/2 &&
+        wy >= c.y - def.h/2 && wy <= c.y + def.h/2) return c;
+  }
+  return null;
+}
+
+function hitPin(wx, wy, radius = 12) {
+  for (const comp of components) {
+    for (const pin of allPins(comp)) {
+      const dx = pin.world.x - wx, dy = pin.world.y - wy;
+      if (Math.sqrt(dx*dx+dy*dy) < radius) return { comp, pin };
+    }
+  }
+  return null;
+}
+
+// ── Mouse ──
+canvas.addEventListener('mousedown', onMouseDown);
+canvas.addEventListener('mousemove', onMouseMove);
+canvas.addEventListener('mouseup', onMouseUp);
+canvas.addEventListener('dblclick', onDblClick);
+canvas.addEventListener('contextmenu', e => { e.preventDefault(); cancelWire(); });
+canvas.addEventListener('wheel', onWheel, { passive: false });
+
+function getWorld(e) {
+  const r = canvas.getBoundingClientRect();
+  return screenToWorld(e.clientX - r.left, e.clientY - r.top);
+}
+
+function onMouseDown(e) {
+  if (e.button === 1 || (e.button === 0 && e.altKey)) {
+    const r = canvas.getBoundingClientRect();
+    dragState = { type: 'canvas', startX: e.clientX, startY: e.clientY, origVX: viewX, origVY: viewY };
+    e.preventDefault(); return;
+  }
+  if (e.button !== 0) return;
+
+  const w = getWorld(e);
+
+  if (tool === 'wire') {
+    const hit = hitPin(w.x, w.y);
+    if (hit) {
+      const pw = hit.pin.world;
+      if (!wireDraw) {
+        wireDraw = { fromComp: hit.comp.id, fromPin: hit.pin.name, points: [{ x: pw.x, y: pw.y }, { x: pw.x, y: pw.y }] };
+      } else {
+        // Complete wire
+        const lastPt = { x: pw.x, y: pw.y };
+        wireDraw.points[wireDraw.points.length - 1] = lastPt;
+        wires.push({
+          id: nextId++,
+          fromComp: wireDraw.fromComp,
+          fromPin: wireDraw.fromPin,
+          toComp: hit.comp.id,
+          toPin: hit.pin.name,
+          points: [...wireDraw.points],
+          val: 0
+        });
+        wireDraw = null;
+        setStatus('Wire connected');
+        updateCounts();
+        if (simRunning) simStep(); else render();
+      }
+    } else if (wireDraw) {
+      // Add waypoint
+      wireDraw.points.push({ x: snapGrid(w.x), y: snapGrid(w.y) });
+    }
+    return;
+  }
+
+  // Select tool
+  const hitC = hitComp(w.x, w.y);
+  if (hitC) {
+    selected = hitC;
+    dragState = { type: 'move', comp: hitC, startX: w.x, startY: w.y, origX: hitC.x, origY: hitC.y };
+    showProps(hitC);
+    render();
+  } else {
+    selected = null;
+    dragState = { type: 'canvas', startX: e.clientX, startY: e.clientY, origVX: viewX, origVY: viewY };
+    showProps(null);
+    render();
+  }
+}
+
+function onMouseMove(e) {
+  const r = canvas.getBoundingClientRect();
+  const sx = e.clientX - r.left, sy = e.clientY - r.top;
+  const w = screenToWorld(sx, sy);
+  document.getElementById('cursor-pos').textContent = `X: ${Math.round(w.x)}  Y: ${Math.round(w.y)}`;
+
+  if (wireDraw) {
+    const last = wireDraw.points[wireDraw.points.length - 1];
+    last.x = snapGrid(w.x); last.y = snapGrid(w.y);
+    render(); return;
+  }
+
+  if (!dragState) return;
+
+  if (dragState.type === 'move') {
+    dragState.comp.x = snapGrid(dragState.origX + w.x - dragState.startX);
+    dragState.comp.y = snapGrid(dragState.origY + w.y - dragState.startY);
+    // Update wires
+    rebuildWireEndpoints(dragState.comp);
+    render();
+  } else if (dragState.type === 'canvas') {
+    viewX = dragState.origVX + (e.clientX - dragState.startX);
+    viewY = dragState.origVY + (e.clientY - dragState.startY);
+    drawGrid(); render();
+  }
+}
+
+function onMouseUp(e) {
+  dragState = null;
+}
+
+function onDblClick(e) {
+  const w = getWorld(e);
+  const hitC = hitComp(w.x, w.y);
+  if (hitC && hitC.type === 'switch') {
+    hitC.state = !hitC.state;
+    if (simRunning) simStep(); else render();
+    showProps(hitC);
+  }
+}
+
+function onWheel(e) {
+  e.preventDefault();
+  const r = canvas.getBoundingClientRect();
+  const mx = e.clientX - r.left, my = e.clientY - r.top;
+  const factor = e.deltaY < 0 ? 1.1 : 0.91;
+  viewX = mx - (mx - viewX) * factor;
+  viewY = my - (my - viewY) * factor;
+  viewScale *= factor;
+  viewScale = Math.max(0.15, Math.min(4, viewScale));
+  drawGrid(); render();
+}
+
+function rebuildWireEndpoints(comp) {
+  wires.forEach(w => {
+    const fromComp = components.find(c => c.id === w.fromComp);
+    const toComp = components.find(c => c.id === w.toComp);
+    if (fromComp === comp || toComp === comp) {
+      if (fromComp) {
+        const pin = allPins(fromComp).find(p => p.name === w.fromPin && p.isOutput);
+        if (pin) w.points[0] = { ...pin.world };
+      }
+      if (toComp) {
+        const pin = allPins(toComp).find(p => p.name === w.toPin && !p.isOutput);
+        if (pin) w.points[w.points.length - 1] = { ...pin.world };
+      }
+    }
+  });
+}
+
+// ── Drag from palette ──
+document.querySelectorAll('.comp-item').forEach(el => {
+  el.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('type', el.dataset.type);
+  });
+});
+
+canvas.addEventListener('dragover', e => e.preventDefault());
+canvas.addEventListener('drop', e => {
+  e.preventDefault();
+  const type = e.dataTransfer.getData('type');
+  if (!type) return;
+  const r = canvas.getBoundingClientRect();
+  const w = screenToWorld(e.clientX - r.left, e.clientY - r.top);
+  const c = addComponent(type, w.x, w.y);
+  selected = c;
+  showProps(c);
+  if (simRunning) simStep(); else render();
+  setStatus(`Added ${COMP_DEFS[type].label}`);
+});
+
+// ── Tools ──
+function setTool(t) {
+  tool = t;
+  document.getElementById('tool-select').classList.toggle('active', t === 'select');
+  document.getElementById('tool-wire').classList.toggle('active', t === 'wire');
+  if (t !== 'wire') cancelWire();
+  setStatus(t === 'wire' ? 'Wire tool: click pins to connect' : 'Select tool');
+}
+
+function cancelWire() { wireDraw = null; render(); }
+
+function deleteSelected() {
+  if (!selected) return;
+  const id = selected.id;
+  components = components.filter(c => c.id !== id);
+  wires = wires.filter(w => w.fromComp !== id && w.toComp !== id);
+  selected = null;
+  showProps(null);
+  render();
+  updateCounts();
+}
+
+function rotateSelected() {
+  if (selected) {
+    selected.rotation = (selected.rotation + 90) % 360;
+    render();
+  }
+}
+
+// ── Zoom ──
+function zoom(f) {
+  const cx = canvas.width/2, cy = canvas.height/2;
+  viewX = cx - (cx - viewX) * f;
+  viewY = cy - (cy - viewY) * f;
+  viewScale *= f;
+  viewScale = Math.max(0.15, Math.min(4, viewScale));
+  drawGrid(); render();
+}
+
+function fitView() {
+  if (!components.length) { viewX=0; viewY=0; viewScale=1; drawGrid(); render(); return; }
+  let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+  components.forEach(c => {
+    const def = COMP_DEFS[c.type];
+    minX = Math.min(minX, c.x-def.w/2); minY = Math.min(minY, c.y-def.h/2);
+    maxX = Math.max(maxX, c.x+def.w/2); maxY = Math.max(maxY, c.y+def.h/2);
+  });
+  const pad = 60;
+  const fw = canvas.width - pad*2, fh = canvas.height - pad*2;
+  const cw = maxX-minX+1, ch = maxY-minY+1;
+  viewScale = Math.min(fw/cw, fh/ch, 2);
+  viewX = pad + (fw - cw*viewScale)/2 - minX*viewScale;
+  viewY = pad + (fh - ch*viewScale)/2 - minY*viewScale;
+  drawGrid(); render();
+}
+
+// ── Properties panel ──
+function showProps(comp) {
+  const noSel = document.getElementById('no-sel');
+  const selP = document.getElementById('sel-props');
+  if (!comp) { noSel.style.display=''; selP.style.display='none'; return; }
+  noSel.style.display='none'; selP.style.display='';
+  const def = COMP_DEFS[comp.type];
+  let html = `
+    <div class="prop-row"><div class="prop-label">Type</div><div class="prop-value">${comp.type.toUpperCase()}</div></div>
+    <div class="prop-row"><div class="prop-label">Label</div><input class="prop-value editable" id="prop-name" value="${comp.name||''}" oninput="updateName(this.value)"></div>
+    <div class="prop-row"><div class="prop-label">Position</div><div class="prop-value">${comp.x}, ${comp.y}</div></div>
+  `;
+
+  if (comp.type === 'switch') {
+    html += `<div class="prop-row"><div class="prop-label">State</div>
+      <button onclick="toggleSwitch()" class="btn btn-primary" style="width:100%;font-size:12px;">${comp.state ? 'HIGH (1)' : 'LOW (0)'}</button>
+    </div>`;
+  }
+
+  // Truth table for gates
+  const gateTypes = ['and','or','not','nand','nor','xor','xnor'];
+  if (gateTypes.includes(comp.type)) {
+    html += `<div class="prop-row"><div class="prop-label">Truth Table</div>${buildTruthTable(comp)}</div>`;
+  }
+
+  selP.innerHTML = html;
+}
+
+function updateName(v) { if (selected) { selected.name = v; render(); } }
+function toggleSwitch() {
+  if (selected && selected.type === 'switch') {
+    selected.state = !selected.state;
+    if (simRunning) simStep(); else render();
+    showProps(selected);
+  }
+}
+
+function buildTruthTable(comp) {
+  const def = COMP_DEFS[comp.type];
+  const ins = def.inputs.map(p => p.name);
+  const outs = def.outputs.map(p => p.name);
+  const rows = Math.pow(2, ins.length);
+  let html = `<table class="truth-table"><tr>${ins.map(n=>`<th>${n}</th>`).join('')}${outs.map(n=>`<th>${n}</th>`).join('')}</tr>`;
+  for (let r = 0; r < rows; r++) {
+    const bits = ins.map((_, i) => (r >> (ins.length-1-i)) & 1);
+    const fake = { ...comp, inputVals: bits };
+    const outVals = computeOutputs(fake);
+    const allHi = outVals.every(v=>v);
+    html += `<tr class="${allHi?'hi':''}">${bits.map(b=>`<td>${b}</td>`).join('')}${outVals.map(v=>`<td>${v}</td>`).join('')}</tr>`;
+  }
+  return html + '</table>';
+}
+
+// ── Save / Load ──
+function openSaveModal() {
+  document.getElementById('save-name').value = '';
+  document.getElementById('save-modal').classList.add('show');
+  setTimeout(() => document.getElementById('save-name').focus(), 100);
+}
+function closeSaveModal() { document.getElementById('save-modal').classList.remove('show'); }
+
+function saveCircuit() {
+  const name = document.getElementById('save-name').value.trim();
+  if (!name) return;
+  const data = JSON.stringify({ components, wires, nextId });
+  const saved = JSON.parse(localStorage.getItem('logiclab_saves') || '{}');
+  saved[name] = { data, ts: Date.now() };
+  localStorage.setItem('logiclab_saves', JSON.stringify(saved));
+  closeSaveModal();
+  loadSavedList();
+  setStatus(`Saved: ${name}`);
+}
+
+function loadCircuit(name) {
+  const saved = JSON.parse(localStorage.getItem('logiclab_saves') || '{}');
+  if (!saved[name]) return;
+  const obj = JSON.parse(saved[name].data);
+  components = obj.components || [];
+  wires = obj.wires || [];
+  nextId = obj.nextId || 1;
+  selected = null;
+  showProps(null);
+  if (simRunning) simStep(); else render();
+  updateCounts();
+  fitView();
+  setStatus(`Loaded: ${name}`);
+}
+
+function deleteCircuit(name) {
+  const saved = JSON.parse(localStorage.getItem('logiclab_saves') || '{}');
+  delete saved[name];
+  localStorage.setItem('logiclab_saves', JSON.stringify(saved));
+  loadSavedList();
+}
+
+function loadSavedList() {
+  const saved = JSON.parse(localStorage.getItem('logiclab_saves') || '{}');
+  const list = document.getElementById('saved-list');
+  const names = Object.keys(saved).sort((a,b) => saved[b].ts - saved[a].ts);
+  if (!names.length) { list.innerHTML = '<div style="padding:8px 10px;font-size:11px;color:var(--text3)">No saved circuits</div>'; return; }
+  list.innerHTML = names.map(n => `
+    <div class="saved-item">
+      <span onclick="loadCircuit('${n}')" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${n}</span>
+      <button class="saved-item-del" onclick="deleteCircuit('${n}')" title="Delete">×</button>
+    </div>
+  `).join('');
+}
+
+function newCircuit() {
+  if (!confirm('Start a new circuit? Unsaved work will be lost.')) return;
+  components = []; wires = []; selected = null; nextId = 1;
+  showProps(null); render(); updateCounts();
+  setStatus('New circuit');
+}
+
+function exportJSON() {
+  const data = JSON.stringify({ components, wires, nextId }, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'circuit.json'; a.click();
+}
+
+function importJSON(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const obj = JSON.parse(ev.target.result);
+      components = obj.components || []; wires = obj.wires || []; nextId = obj.nextId || 1;
+      selected = null; showProps(null);
+      if (simRunning) simStep(); else render();
+      updateCounts(); fitView();
+      setStatus('Circuit imported');
+    } catch { alert('Invalid circuit file'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// ── Keyboard ──
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
+  if (e.key === 'v' || e.key === 'V') setTool('select');
+  if (e.key === 'w' || e.key === 'W') setTool('wire');
+  if (e.key === 'r' || e.key === 'R') rotateSelected();
+  if (e.key === ' ') { e.preventDefault(); toggleSim(); }
+  if (e.key === 'Escape') cancelWire();
+  if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey) fitView();
+  if (e.key === 's' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); openSaveModal(); }
+});
+
+// ── Util ──
+function setStatus(msg) { document.getElementById('status-msg').textContent = msg; }
+function updateCounts() {
+  document.getElementById('comp-count').textContent = components.length;
+  document.getElementById('wire-count').textContent = wires.length;
+}
+
+// ── Init ──
+setTool('select');
+loadSavedList();
+setStatus('Welcome to LogicLab — drag components, use W for wire tool, Space to simulate');
+render();
+</script>
+</body>
+</html>
