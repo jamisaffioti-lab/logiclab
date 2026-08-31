@@ -1497,8 +1497,44 @@ function buildTruthTable(comp) {
   return html + '</table>';
 }
 
+// ── localStorage availability check ──
+const storageAvailable = (() => {
+  try {
+    const t = '__logiclab_test__';
+    localStorage.setItem(t, '1');
+    localStorage.removeItem(t);
+    return true;
+  } catch(e) { return false; }
+})();
+
+function showStorageWarning() {
+  const existing = document.getElementById('storage-warning');
+  if (existing) return;
+  const bar = document.createElement('div');
+  bar.id = 'storage-warning';
+  bar.style.cssText = `
+    position:fixed; bottom:22px; left:200px; right:220px; z-index:500;
+    background:#2d2010; border:1px solid #f1c40f; border-radius:5px;
+    padding:8px 14px; font-size:12px; color:#f1c40f;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+  `;
+  bar.innerHTML = `
+    <span>⚠️ Browser storage is blocked (common on school Macs). <strong>Use Export/Import</strong> to save your work as a .json file instead.</span>
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#f1c40f;cursor:pointer;font-size:16px;line-height:1;">×</button>
+  `;
+  document.body.appendChild(bar);
+}
+
 // ── Save / Load ──
 function openSaveModal() {
+  if (!storageAvailable) {
+    showStorageWarning();
+    // Offer export as fallback
+    if (confirm('Browser storage is not available on this device.\n\nClick OK to Export your circuit as a .json file instead (you can re-import it next time).')) {
+      exportJSON();
+    }
+    return;
+  }
   document.getElementById('save-name').value = '';
   document.getElementById('save-modal').classList.add('show');
   setTimeout(() => document.getElementById('save-name').focus(), 100);
@@ -1509,47 +1545,71 @@ function saveCircuit() {
   const name = document.getElementById('save-name').value.trim();
   if (!name) return;
   const data = JSON.stringify({ components, wires, nextId });
-  const saved = JSON.parse(localStorage.getItem('logiclab_saves') || '{}');
-  saved[name] = { data, ts: Date.now() };
-  localStorage.setItem('logiclab_saves', JSON.stringify(saved));
-  closeSaveModal();
-  loadSavedList();
-  setStatus(`Saved: ${name}`);
+  try {
+    const saved = JSON.parse(localStorage.getItem('logiclab_saves') || '{}');
+    saved[name] = { data, ts: Date.now() };
+    localStorage.setItem('logiclab_saves', JSON.stringify(saved));
+    closeSaveModal();
+    loadSavedList();
+    setStatus(`Saved: ${name}`);
+  } catch(e) {
+    closeSaveModal();
+    showStorageWarning();
+    setStatus('Save failed — use Export instead');
+  }
 }
 
 function loadCircuit(name) {
-  const saved = JSON.parse(localStorage.getItem('logiclab_saves') || '{}');
-  if (!saved[name]) return;
-  const obj = JSON.parse(saved[name].data);
-  components = obj.components || [];
-  wires = obj.wires || [];
-  nextId = obj.nextId || 1;
-  selected = null;
-  showProps(null);
-  if (simRunning) simStep(); else render();
-  updateCounts();
-  fitView();
-  setStatus(`Loaded: ${name}`);
+  try {
+    const saved = JSON.parse(localStorage.getItem('logiclab_saves') || '{}');
+    if (!saved[name]) return;
+    const obj = JSON.parse(saved[name].data);
+    components = obj.components || [];
+    wires = obj.wires || [];
+    nextId = obj.nextId || 1;
+    selected = null;
+    showProps(null);
+    if (simRunning) simStep(); else render();
+    updateCounts();
+    fitView();
+    setStatus(`Loaded: ${name}`);
+  } catch(e) {
+    showStorageWarning();
+  }
 }
 
 function deleteCircuit(name) {
-  const saved = JSON.parse(localStorage.getItem('logiclab_saves') || '{}');
-  delete saved[name];
-  localStorage.setItem('logiclab_saves', JSON.stringify(saved));
-  loadSavedList();
+  try {
+    const saved = JSON.parse(localStorage.getItem('logiclab_saves') || '{}');
+    delete saved[name];
+    localStorage.setItem('logiclab_saves', JSON.stringify(saved));
+    loadSavedList();
+  } catch(e) { showStorageWarning(); }
 }
 
 function loadSavedList() {
-  const saved = JSON.parse(localStorage.getItem('logiclab_saves') || '{}');
   const list = document.getElementById('saved-list');
-  const names = Object.keys(saved).sort((a,b) => saved[b].ts - saved[a].ts);
-  if (!names.length) { list.innerHTML = '<div style="padding:8px 10px;font-size:11px;color:var(--text3)">No saved circuits</div>'; return; }
-  list.innerHTML = names.map(n => `
-    <div class="saved-item">
-      <span onclick="loadCircuit('${n}')" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${n}</span>
-      <button class="saved-item-del" onclick="deleteCircuit('${n}')" title="Delete">×</button>
-    </div>
-  `).join('');
+  if (!storageAvailable) {
+    list.innerHTML = `
+      <div style="padding:8px 10px;font-size:11px;color:#f1c40f;line-height:1.5;">
+        ⚠️ Storage blocked.<br>
+        <span style="color:var(--text3)">Use <strong style="color:var(--text2)">Export</strong> to save circuits as files.</span>
+      </div>`;
+    return;
+  }
+  try {
+    const saved = JSON.parse(localStorage.getItem('logiclab_saves') || '{}');
+    const names = Object.keys(saved).sort((a,b) => saved[b].ts - saved[a].ts);
+    if (!names.length) { list.innerHTML = '<div style="padding:8px 10px;font-size:11px;color:var(--text3)">No saved circuits</div>'; return; }
+    list.innerHTML = names.map(n => `
+      <div class="saved-item">
+        <span onclick="loadCircuit('${n}')" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${n}</span>
+        <button class="saved-item-del" onclick="deleteCircuit('${n}')" title="Delete">×</button>
+      </div>
+    `).join('');
+  } catch(e) {
+    list.innerHTML = '<div style="padding:8px 10px;font-size:11px;color:var(--text3)">Could not load saves</div>';
+  }
 }
 
 function newCircuit() {
@@ -1606,7 +1666,12 @@ function updateCounts() {
 // ── Init ──
 setTool('select');
 loadSavedList();
-setStatus('Welcome to LogicLab — drag components, use W for wire tool, Space to simulate');
+if (!storageAvailable) {
+  setStatus('⚠️ Storage blocked — use Export/Import to save work');
+  showStorageWarning();
+} else {
+  setStatus('Welcome to LogicLab — drag components, use W for wire tool, Space to simulate');
+}
 render();
 </script>
 </body>
