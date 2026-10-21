@@ -145,13 +145,14 @@ body {
 }
 .comp-item {
   display: flex; align-items: center; gap: 8px;
-  padding: 6px 12px; cursor: grab;
+  padding: 6px 12px; cursor: pointer;
   border-radius: 4px; margin: 1px 6px;
-  transition: background .12s;
+  transition: background .12s, border-color .12s;
   font-size: 13px; color: var(--text2);
+  border: 1.5px solid transparent;
 }
 .comp-item:hover { background: var(--panel2); color: var(--text); }
-.comp-item:active { cursor: grabbing; }
+.comp-item.pending-place { background: var(--school-red-glow); color: var(--text); border-color: var(--school-red); }
 .comp-icon { width: 28px; height: 20px; flex-shrink: 0; }
 
 /* CANVAS */
@@ -399,66 +400,67 @@ body {
     <!-- LEFT: COMPONENT PALETTE -->
     <div id="left-panel">
       <div class="panel-title">Components</div>
+      <div style="font-size:11px;color:var(--text3);padding:4px 12px 6px;line-height:1.4;">Click a component, then click the canvas to place it. Press Esc to cancel.</div>
       <div id="component-list">
 
         <div class="comp-category">Inputs / Outputs</div>
-        <div class="comp-item" draggable="true" data-type="switch">
+        <div class="comp-item" data-type="switch">
           <svg class="comp-icon" viewBox="0 0 28 20"><rect x="2" y="7" width="24" height="6" rx="3" fill="none" stroke="#8a93a8" stroke-width="1.5"/><circle cx="20" cy="10" r="3.5" fill="#2ecc71"/><line x1="0" y1="10" x2="2" y2="10" stroke="#8a93a8" stroke-width="1.5"/><line x1="26" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>
           Switch
         </div>
-        <div class="comp-item" draggable="true" data-type="clock">
+        <div class="comp-item" data-type="clock">
           <svg class="comp-icon" viewBox="0 0 28 20"><rect x="2" y="4" width="24" height="12" rx="2" fill="none" stroke="#8a93a8" stroke-width="1.5"/><polyline points="5,14 5,10 9,10 9,6 13,6 13,10 17,10 17,6 21,6 21,10 25,10" fill="none" stroke="#00b4d8" stroke-width="1.5"/></svg>
           Clock
         </div>
-        <div class="comp-item" draggable="true" data-type="led">
+        <div class="comp-item" data-type="led">
           <svg class="comp-icon" viewBox="0 0 28 20"><circle cx="14" cy="10" r="6" fill="none" stroke="#8a93a8" stroke-width="1.5"/><circle cx="14" cy="10" r="3" fill="#e74c3c" opacity="0.7"/><line x1="0" y1="10" x2="8" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>
           LED
         </div>
-        <div class="comp-item" draggable="true" data-type="7seg">
+        <div class="comp-item" data-type="7seg">
           <svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" rx="2" fill="none" stroke="#8a93a8" stroke-width="1.3"/><text x="14" y="15" text-anchor="middle" fill="#f1c40f" font-size="12" font-family="monospace">8</text></svg>
           7-Segment
         </div>
-        <div class="comp-item" draggable="true" data-type="vcc">
+        <div class="comp-item" data-type="vcc">
           <svg class="comp-icon" viewBox="0 0 28 20"><line x1="14" y1="18" x2="14" y2="10" stroke="#8a93a8" stroke-width="1.5"/><line x1="8" y1="10" x2="20" y2="10" stroke="#2ecc71" stroke-width="2"/><text x="14" y="8" text-anchor="middle" fill="#2ecc71" font-size="8" font-family="monospace">VCC</text></svg>
           VCC (HIGH)
         </div>
-        <div class="comp-item" draggable="true" data-type="gnd">
+        <div class="comp-item" data-type="gnd">
           <svg class="comp-icon" viewBox="0 0 28 20"><line x1="14" y1="2" x2="14" y2="10" stroke="#8a93a8" stroke-width="1.5"/><line x1="8" y1="10" x2="20" y2="10" stroke="#8a93a8" stroke-width="2"/><line x1="10" y1="13" x2="18" y2="13" stroke="#8a93a8" stroke-width="1.5"/><line x1="12" y1="16" x2="16" y2="16" stroke="#8a93a8" stroke-width="1.5"/></svg>
           GND (LOW)
         </div>
 
         <div class="comp-category">Logic Gates</div>
-        <div class="comp-item" draggable="true" data-type="and"><svg class="comp-icon" viewBox="0 0 28 20"><path d="M4 4 L14 4 Q22 4 22 10 Q22 16 14 16 L4 16 Z" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="7" x2="4" y2="7" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="13" x2="4" y2="13" stroke="#8a93a8" stroke-width="1.5"/><line x1="22" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>AND</div>
-        <div class="comp-item" draggable="true" data-type="or"><svg class="comp-icon" viewBox="0 0 28 20"><path d="M4 4 Q9 4 14 4 Q22 4 22 10 Q22 16 14 16 Q9 16 4 16 Q8 10 4 4 Z" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="7" x2="5" y2="7" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="13" x2="5" y2="13" stroke="#8a93a8" stroke-width="1.5"/><line x1="22" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>OR</div>
-        <div class="comp-item" draggable="true" data-type="not"><svg class="comp-icon" viewBox="0 0 28 20"><polygon points="4,4 20,10 4,16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><circle cx="22" cy="10" r="2" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="10" x2="4" y2="10" stroke="#8a93a8" stroke-width="1.5"/><line x1="24" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>NOT</div>
-        <div class="comp-item" draggable="true" data-type="nand"><svg class="comp-icon" viewBox="0 0 28 20"><path d="M4 4 L13 4 Q20 4 20 10 Q20 16 13 16 L4 16 Z" fill="none" stroke="#8a93a8" stroke-width="1.5"/><circle cx="22" cy="10" r="2" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="7" x2="4" y2="7" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="13" x2="4" y2="13" stroke="#8a93a8" stroke-width="1.5"/><line x1="24" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>NAND</div>
-        <div class="comp-item" draggable="true" data-type="nor"><svg class="comp-icon" viewBox="0 0 28 20"><path d="M4 4 Q9 4 13 4 Q20 4 20 10 Q20 16 13 16 Q9 16 4 16 Q8 10 4 4 Z" fill="none" stroke="#8a93a8" stroke-width="1.5"/><circle cx="22" cy="10" r="2" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="7" x2="5" y2="7" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="13" x2="5" y2="13" stroke="#8a93a8" stroke-width="1.5"/><line x1="24" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>NOR</div>
-        <div class="comp-item" draggable="true" data-type="xor"><svg class="comp-icon" viewBox="0 0 28 20"><path d="M5 4 Q10 4 15 4 Q22 4 22 10 Q22 16 15 16 Q10 16 5 16 Q9 10 5 4 Z" fill="none" stroke="#8a93a8" stroke-width="1.5"/><path d="M2 4 Q6 10 2 16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="7" x2="4" y2="7" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="13" x2="4" y2="13" stroke="#8a93a8" stroke-width="1.5"/><line x1="22" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>XOR</div>
-        <div class="comp-item" draggable="true" data-type="xnor"><svg class="comp-icon" viewBox="0 0 28 20"><path d="M5 4 Q10 4 14 4 Q20 4 20 10 Q20 16 14 16 Q10 16 5 16 Q9 10 5 4 Z" fill="none" stroke="#8a93a8" stroke-width="1.5"/><path d="M2 4 Q6 10 2 16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><circle cx="22" cy="10" r="2" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="7" x2="4" y2="7" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="13" x2="4" y2="13" stroke="#8a93a8" stroke-width="1.5"/><line x1="24" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>XNOR</div>
+        <div class="comp-item" data-type="and"><svg class="comp-icon" viewBox="0 0 28 20"><path d="M4 4 L14 4 Q22 4 22 10 Q22 16 14 16 L4 16 Z" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="7" x2="4" y2="7" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="13" x2="4" y2="13" stroke="#8a93a8" stroke-width="1.5"/><line x1="22" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>AND</div>
+        <div class="comp-item" data-type="or"><svg class="comp-icon" viewBox="0 0 28 20"><path d="M4 4 Q9 4 14 4 Q22 4 22 10 Q22 16 14 16 Q9 16 4 16 Q8 10 4 4 Z" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="7" x2="5" y2="7" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="13" x2="5" y2="13" stroke="#8a93a8" stroke-width="1.5"/><line x1="22" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>OR</div>
+        <div class="comp-item" data-type="not"><svg class="comp-icon" viewBox="0 0 28 20"><polygon points="4,4 20,10 4,16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><circle cx="22" cy="10" r="2" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="10" x2="4" y2="10" stroke="#8a93a8" stroke-width="1.5"/><line x1="24" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>NOT</div>
+        <div class="comp-item" data-type="nand"><svg class="comp-icon" viewBox="0 0 28 20"><path d="M4 4 L13 4 Q20 4 20 10 Q20 16 13 16 L4 16 Z" fill="none" stroke="#8a93a8" stroke-width="1.5"/><circle cx="22" cy="10" r="2" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="7" x2="4" y2="7" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="13" x2="4" y2="13" stroke="#8a93a8" stroke-width="1.5"/><line x1="24" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>NAND</div>
+        <div class="comp-item" data-type="nor"><svg class="comp-icon" viewBox="0 0 28 20"><path d="M4 4 Q9 4 13 4 Q20 4 20 10 Q20 16 13 16 Q9 16 4 16 Q8 10 4 4 Z" fill="none" stroke="#8a93a8" stroke-width="1.5"/><circle cx="22" cy="10" r="2" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="7" x2="5" y2="7" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="13" x2="5" y2="13" stroke="#8a93a8" stroke-width="1.5"/><line x1="24" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>NOR</div>
+        <div class="comp-item" data-type="xor"><svg class="comp-icon" viewBox="0 0 28 20"><path d="M5 4 Q10 4 15 4 Q22 4 22 10 Q22 16 15 16 Q10 16 5 16 Q9 10 5 4 Z" fill="none" stroke="#8a93a8" stroke-width="1.5"/><path d="M2 4 Q6 10 2 16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="7" x2="4" y2="7" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="13" x2="4" y2="13" stroke="#8a93a8" stroke-width="1.5"/><line x1="22" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>XOR</div>
+        <div class="comp-item" data-type="xnor"><svg class="comp-icon" viewBox="0 0 28 20"><path d="M5 4 Q10 4 14 4 Q20 4 20 10 Q20 16 14 16 Q10 16 5 16 Q9 10 5 4 Z" fill="none" stroke="#8a93a8" stroke-width="1.5"/><path d="M2 4 Q6 10 2 16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><circle cx="22" cy="10" r="2" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="7" x2="4" y2="7" stroke="#8a93a8" stroke-width="1.5"/><line x1="0" y1="13" x2="4" y2="13" stroke="#8a93a8" stroke-width="1.5"/><line x1="24" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>XNOR</div>
 
         <div class="comp-category">MUX / Decoders</div>
-        <div class="comp-item" draggable="true" data-type="mux21"><svg class="comp-icon" viewBox="0 0 28 20"><polygon points="2,2 26,6 26,14 2,18" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="7" font-family="monospace">MUX</text></svg>2:1 MUX</div>
-        <div class="comp-item" draggable="true" data-type="mux41"><svg class="comp-icon" viewBox="0 0 28 20"><polygon points="2,2 26,7 26,13 2,18" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">4:1</text></svg>4:1 MUX</div>
-        <div class="comp-item" draggable="true" data-type="mux81"><svg class="comp-icon" viewBox="0 0 28 20"><polygon points="2,1 26,6 26,14 2,19" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">8:1</text></svg>8:1 MUX (151)</div>
-        <div class="comp-item" draggable="true" data-type="demux12"><svg class="comp-icon" viewBox="0 0 28 20"><polygon points="2,6 26,2 26,18 2,14" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">DMX</text></svg>1:2 DEMUX</div>
-        <div class="comp-item" draggable="true" data-type="decoder24"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">DEC</text></svg>2-4 Dec</div>
-        <div class="comp-item" draggable="true" data-type="decoder38"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="5" font-family="monospace">3-8</text></svg>3-8 Dec (138)</div>
+        <div class="comp-item" data-type="mux21"><svg class="comp-icon" viewBox="0 0 28 20"><polygon points="2,2 26,6 26,14 2,18" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="7" font-family="monospace">MUX</text></svg>2:1 MUX</div>
+        <div class="comp-item" data-type="mux41"><svg class="comp-icon" viewBox="0 0 28 20"><polygon points="2,2 26,7 26,13 2,18" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">4:1</text></svg>4:1 MUX</div>
+        <div class="comp-item" data-type="mux81"><svg class="comp-icon" viewBox="0 0 28 20"><polygon points="2,1 26,6 26,14 2,19" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">8:1</text></svg>8:1 MUX (151)</div>
+        <div class="comp-item" data-type="demux12"><svg class="comp-icon" viewBox="0 0 28 20"><polygon points="2,6 26,2 26,18 2,14" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">DMX</text></svg>1:2 DEMUX</div>
+        <div class="comp-item" data-type="decoder24"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">DEC</text></svg>2-4 Dec</div>
+        <div class="comp-item" data-type="decoder38"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="5" font-family="monospace">3-8</text></svg>3-8 Dec (138)</div>
 
         <div class="comp-category">Adders / ALU</div>
-        <div class="comp-item" draggable="true" data-type="halfadder"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">HA</text></svg>Half Adder</div>
-        <div class="comp-item" draggable="true" data-type="fulladder"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">FA</text></svg>Full Adder</div>
-        <div class="comp-item" draggable="true" data-type="comparator"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">CMP</text></svg>4-bit CMP (85)</div>
+        <div class="comp-item" data-type="halfadder"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">HA</text></svg>Half Adder</div>
+        <div class="comp-item" data-type="fulladder"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">FA</text></svg>Full Adder</div>
+        <div class="comp-item" data-type="comparator"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">CMP</text></svg>4-bit CMP (85)</div>
 
         <div class="comp-category">Flip-Flops / Latches</div>
-        <div class="comp-item" draggable="true" data-type="dff"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="7" font-family="monospace">D-FF</text></svg>D Flip-Flop</div>
-        <div class="comp-item" draggable="true" data-type="jkff"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">JK-FF</text></svg>JK Flip-Flop</div>
-        <div class="comp-item" draggable="true" data-type="sr_latch"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">SR</text></svg>SR Latch</div>
+        <div class="comp-item" data-type="dff"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="7" font-family="monospace">D-FF</text></svg>D Flip-Flop</div>
+        <div class="comp-item" data-type="jkff"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">JK-FF</text></svg>JK Flip-Flop</div>
+        <div class="comp-item" data-type="sr_latch"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">SR</text></svg>SR Latch</div>
 
         <div class="comp-category">Registers / Counters</div>
-        <div class="comp-item" draggable="true" data-type="shift4"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="2" y="4" width="24" height="12" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="13" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">SHIFT</text></svg>4-bit Shift Reg</div>
-        <div class="comp-item" draggable="true" data-type="shift8_595"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="2" y="2" width="24" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="5" font-family="monospace">595</text></svg>74HC595 (8-bit)</div>
-        <div class="comp-item" draggable="true" data-type="counter4"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="2" y="3" width="24" height="14" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="13" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">CNT</text></svg>4-bit Counter</div>
-        <div class="comp-item" draggable="true" data-type="tristate"><svg class="comp-icon" viewBox="0 0 28 20"><polygon points="4,4 20,10 4,16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="12" y1="16" x2="12" y2="20" stroke="#8a93a8" stroke-width="1.5"/><line x1="20" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>Tri-State Buffer</div>
+        <div class="comp-item" data-type="shift4"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="2" y="4" width="24" height="12" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="13" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">SHIFT</text></svg>4-bit Shift Reg</div>
+        <div class="comp-item" data-type="shift8_595"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="2" y="2" width="24" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="5" font-family="monospace">595</text></svg>74HC595 (8-bit)</div>
+        <div class="comp-item" data-type="counter4"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="2" y="3" width="24" height="14" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="13" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">CNT</text></svg>4-bit Counter</div>
+        <div class="comp-item" data-type="tristate"><svg class="comp-icon" viewBox="0 0 28 20"><polygon points="4,4 20,10 4,16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><line x1="12" y1="16" x2="12" y2="20" stroke="#8a93a8" stroke-width="1.5"/><line x1="20" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>Tri-State Buffer</div>
 
       </div>
     </div>
@@ -532,6 +534,8 @@ const ctx = canvas.getContext('2d');
 const gridCanvas = document.getElementById('grid-canvas');
 const gctx = gridCanvas.getContext('2d');
 const wrap = document.getElementById('canvas-wrap');
+const wfCanvas = document.getElementById('waveform-canvas');
+const wfCtx = wfCanvas ? wfCanvas.getContext('2d') : null;
 
 // State
 let components = [], wires = [], selected = null;
@@ -1033,6 +1037,17 @@ function onMouseDown(e){
   if(e.button!==0) return;
   const w=getWorld(e);
 
+  // Click-to-place from palette
+  if(pendingType){
+    const type=pendingType;
+    const c=addComponent(type,snapGrid(w.x),snapGrid(w.y));
+    selected=c; showProps(c);
+    setTool('select'); // clears pendingType and highlights Select button
+    if(simRunning) simStep(); else render();
+    setStatus(`Placed ${COMP_DEFS[type].label}. Select it from the panel to place another.`);
+    return;
+  }
+
   if(tool==='probe'){
     const hit=hitPin(w.x,w.y,14);
     if(hit){
@@ -1134,25 +1149,45 @@ function rebuildWireEndpoints(comp){
   });
 }
 
-// ── Drag from palette ──
+// ── Click-to-place from palette ──
+let pendingType = null;
+
+function setPendingType(type) {
+  pendingType = type;
+  document.querySelectorAll('.comp-item').forEach(el=>{
+    el.classList.toggle('pending-place', el.dataset.type === type);
+  });
+  if(type) {
+    canvas.style.cursor = 'crosshair';
+    setStatus(`Click canvas to place ${COMP_DEFS[type].label} — Esc to cancel`);
+  } else {
+    canvas.style.cursor = '';
+  }
+}
+
 document.querySelectorAll('.comp-item').forEach(el=>{
-  el.addEventListener('dragstart',e=>e.dataTransfer.setData('type',el.dataset.type));
+  el.addEventListener('click', e=>{
+    e.stopPropagation();
+    if(pendingType === el.dataset.type) {
+      setPendingType(null);
+      setStatus('Placement cancelled');
+    } else {
+      setPendingType(el.dataset.type);
+    }
+  });
 });
-canvas.addEventListener('dragover',e=>e.preventDefault());
-canvas.addEventListener('drop',e=>{
-  e.preventDefault();
-  const type=e.dataTransfer.getData('type'); if(!type) return;
-  const r=canvas.getBoundingClientRect();
-  const w=screenToWorld(e.clientX-r.left,e.clientY-r.top);
-  const c=addComponent(type,w.x,w.y);
-  selected=c; showProps(c);
-  if(simRunning) simStep(); else render();
-  setStatus(`Added ${COMP_DEFS[type].label}`);
+
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape') {
+    if(pendingType) { setPendingType(null); setStatus('Select tool — click to select, drag to move'); }
+    cancelWire();
+  }
 });
 
 // ── Tools ──
 function setTool(t){
   tool=t;
+  setPendingType(null); // cancel any pending placement when switching tools
   ['select','wire','probe'].forEach(id=>{
     const el=document.getElementById('tool-'+id);
     if(el) el.classList.toggle('active',t===id);
@@ -1244,8 +1279,6 @@ function buildTruthTable(comp){
 }
 
 // ── WAVEFORM VIEWER ──
-const wfCanvas=document.getElementById('waveform-canvas');
-const wfCtx=wfCanvas.getContext('2d');
 const ROW_H=30;
 const TICK_W=8;
 
