@@ -890,11 +890,25 @@ function drawComponent(comp) {
   // Pins
   allPins(comp).forEach(pin=>{
     const val=pin.isOutput?(comp.outputVals&&comp.outputVals[pin.idx]||0):(comp.inputVals&&comp.inputVals[pin.idx]||0);
-    // Check if probed
     const isProbed=probes.some(p=>p.compId===comp.id&&p.pinName===pin.name&&p.isOutput===pin.isOutput);
+    // Highlight valid/invalid targets when wiring
+    let pinR=isProbed?4.5/viewScale:3.5/viewScale;
+    let strokeCol=sel?'#00b4d8':'#6a7590';
+    if(wireDraw){
+      const needsOutput=!wireDraw.fromIsOutput; // started from input, need an output
+      const isValidTarget=(pin.isOutput===needsOutput)&&(comp.id!==wireDraw.fromComp);
+      const alreadyDriven=pin.isOutput?false:!!wires.find(x=>x.toComp===comp.id&&x.toPin===pin.name);
+      if(isValidTarget&&!alreadyDriven){
+        strokeCol='#2ecc71'; pinR=5/viewScale;
+        ctx.shadowColor='#2ecc71'; ctx.shadowBlur=6/viewScale;
+      } else {
+        ctx.globalAlpha=0.35;
+      }
+    }
     ctx.fillStyle=isProbed?'#f1c40f':(simRunning?(val?'#2ecc71':'#3a4255'):'#556080');
-    ctx.beginPath(); ctx.arc(pin.rel[0],pin.rel[1],isProbed?4.5/viewScale:3.5/viewScale,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle=sel?'#00b4d8':'#6a7590'; ctx.lineWidth=1/viewScale; ctx.stroke();
+    ctx.beginPath(); ctx.arc(pin.rel[0],pin.rel[1],pinR,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle=strokeCol; ctx.lineWidth=1/viewScale; ctx.stroke();
+    ctx.shadowBlur=0; ctx.globalAlpha=1;
     if(viewScale>0.55&&def.inputs.length+def.outputs.length<=8){
       ctx.fillStyle='#8a93a8'; ctx.font=`${8/viewScale}px IBM Plex Mono`;
       ctx.textAlign=pin.isOutput?'left':'right';
@@ -1072,13 +1086,40 @@ function onMouseDown(e){
     if(hit){
       const pw=hit.pin.world;
       if(!wireDraw){
-        wireDraw={fromComp:hit.comp.id,fromPin:hit.pin.name,points:[{x:pw.x,y:pw.y},{x:pw.x,y:pw.y}]};
+        wireDraw={fromComp:hit.comp.id,fromPin:hit.pin.name,fromIsOutput:hit.pin.isOutput,points:[{x:pw.x,y:pw.y},{x:pw.x,y:pw.y}]};
+        setStatus(hit.pin.isOutput?'Wire started from output — click an input pin to finish':'Wire started from input — click an output pin to finish');
       } else {
-        const lastPt={x:pw.x,y:pw.y};
-        wireDraw.points[wireDraw.points.length-1]=lastPt;
-        wires.push({id:nextId++,fromComp:wireDraw.fromComp,fromPin:wireDraw.fromPin,toComp:hit.comp.id,toPin:hit.pin.name,points:[...wireDraw.points],val:0});
+        const fromIsOutput=wireDraw.fromIsOutput;
+        const toIsOutput=hit.pin.isOutput;
+        // Rule 1: must be output→input (or input→output, normalised below)
+        if(fromIsOutput===toIsOutput){
+          setStatus('❌ Wires must connect an output pin to an input pin — both ends are '+(fromIsOutput?'outputs':'inputs')+'.');
+          wireDraw=null; render(); return;
+        }
+        // Rule 2: no self-connections
+        if(wireDraw.fromComp===hit.comp.id){
+          setStatus('❌ Cannot connect a component to itself.');
+          wireDraw=null; render(); return;
+        }
+        // Normalise so fromPin is always the output side
+        let fromCompId=wireDraw.fromComp,fromPinName=wireDraw.fromPin;
+        let toCompId=hit.comp.id,toPinName=hit.pin.name;
+        const pts=[...wireDraw.points];
+        pts[pts.length-1]={x:pw.x,y:pw.y};
+        if(!fromIsOutput){[fromCompId,fromPinName,toCompId,toPinName]=[toCompId,toPinName,fromCompId,fromPinName];}
+        // Rule 3: input pin already driven
+        if(wires.find(x=>x.toComp===toCompId&&x.toPin===toPinName)){
+          setStatus('❌ That input pin is already connected — delete the existing wire first.');
+          wireDraw=null; render(); return;
+        }
+        // Rule 4: duplicate wire
+        if(wires.find(x=>x.fromComp===fromCompId&&x.fromPin===fromPinName&&x.toComp===toCompId&&x.toPin===toPinName)){
+          setStatus('❌ That connection already exists.');
+          wireDraw=null; render(); return;
+        }
+        wires.push({id:nextId++,fromComp:fromCompId,fromPin:fromPinName,toComp:toCompId,toPin:toPinName,points:pts,val:0});
         wireDraw=null;
-        setStatus('Wire connected'); updateCounts();
+        setStatus('✓ Wire connected'); updateCounts();
         if(simRunning) simStep(); else render();
       }
     } else if(wireDraw){
