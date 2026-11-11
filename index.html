@@ -408,9 +408,17 @@ body {
           <svg class="comp-icon" viewBox="0 0 28 20"><rect x="2" y="7" width="24" height="6" rx="3" fill="none" stroke="#8a93a8" stroke-width="1.5"/><circle cx="20" cy="10" r="3.5" fill="#2ecc71"/><line x1="0" y1="10" x2="2" y2="10" stroke="#8a93a8" stroke-width="1.5"/><line x1="26" y1="10" x2="28" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>
           Switch
         </div>
+        <div class="comp-item" data-type="spdt">
+          <svg class="comp-icon" viewBox="0 0 28 20"><line x1="0" y1="10" x2="8" y2="10" stroke="#8a93a8" stroke-width="1.5"/><circle cx="8" cy="10" r="2" fill="#8a93a8"/><line x1="8" y1="10" x2="20" y2="5" stroke="#2ecc71" stroke-width="1.5"/><line x1="20" y1="5" x2="28" y2="5" stroke="#8a93a8" stroke-width="1.5"/><line x1="20" y1="15" x2="28" y2="15" stroke="#8a93a8" stroke-width="1.5"/></svg>
+          SPDT Switch
+        </div>
         <div class="comp-item" data-type="clock">
           <svg class="comp-icon" viewBox="0 0 28 20"><rect x="2" y="4" width="24" height="12" rx="2" fill="none" stroke="#8a93a8" stroke-width="1.5"/><polyline points="5,14 5,10 9,10 9,6 13,6 13,10 17,10 17,6 21,6 21,10 25,10" fill="none" stroke="#00b4d8" stroke-width="1.5"/></svg>
           Clock
+        </div>
+        <div class="comp-item" data-type="timer555">
+          <svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" rx="2" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="14" text-anchor="middle" fill="#f1c40f" font-size="10" font-family="monospace">555</text></svg>
+          555 Timer
         </div>
         <div class="comp-item" data-type="led">
           <svg class="comp-icon" viewBox="0 0 28 20"><circle cx="14" cy="10" r="6" fill="none" stroke="#8a93a8" stroke-width="1.5"/><circle cx="14" cy="10" r="3" fill="#e74c3c" opacity="0.7"/><line x1="0" y1="10" x2="8" y2="10" stroke="#8a93a8" stroke-width="1.5"/></svg>
@@ -583,7 +591,9 @@ function snapGrid(v) { return Math.round(v/GRID)*GRID; }
 // ── Component definitions ──
 const COMP_DEFS = {
   switch:    {label:'SW',     w:60, h:40, inputs:[], outputs:[{name:'Q',rel:[30,0]}], category:'io'},
+  spdt:      {label:'SPDT',   w:70, h:50, inputs:[{name:'COM',rel:[-35,0]}], outputs:[{name:'NO',rel:[35,-14]},{name:'NC',rel:[35,14]}], category:'io'},
   clock:     {label:'CLK',    w:60, h:40, inputs:[], outputs:[{name:'Q',rel:[30,0]}], category:'io'},
+  timer555:  {label:'555',    w:90, h:100, inputs:[{name:'TRG',rel:[-45,-30]},{name:'THR',rel:[-45,0]},{name:'RST',rel:[-45,30]},{name:'CV',rel:[0,50]}], outputs:[{name:'OUT',rel:[45,-20]},{name:'DIS',rel:[45,20]}], category:'io'},
   led:       {label:'LED',    w:50, h:40, inputs:[{name:'A',rel:[-25,0]}], outputs:[], category:'io'},
   '7seg':    {label:'7SEG',   w:70, h:80, inputs:[{name:'A',rel:[-35,-24]},{name:'B',rel:[-35,-8]},{name:'C',rel:[-35,8]},{name:'D',rel:[-35,24]}], outputs:[], category:'io'},
   vcc:       {label:'VCC',    w:40, h:30, inputs:[], outputs:[{name:'Q',rel:[0,15]}], category:'io'},
@@ -604,8 +614,8 @@ const COMP_DEFS = {
   halfadder: {label:'Half Add',w:80, h:60, inputs:[{name:'A',rel:[-40,-15]},{name:'B',rel:[-40,15]}], outputs:[{name:'S',rel:[40,-15]},{name:'Cout',rel:[40,15]}]},
   fulladder: {label:'Full Add',w:80, h:60, inputs:[{name:'A',rel:[-40,-15]},{name:'B',rel:[-40,0]},{name:'Cin',rel:[-40,15]}], outputs:[{name:'S',rel:[40,-15]},{name:'Cout',rel:[40,15]}]},
   comparator:{label:'74HC85', w:90, h:80, inputs:[{name:'A0',rel:[-45,-24]},{name:'A1',rel:[-45,-8]},{name:'B0',rel:[-45,8]},{name:'B1',rel:[-45,24]}], outputs:[{name:'A>B',rel:[45,-16]},{name:'A=B',rel:[45,0]},{name:'A<B',rel:[45,16]}]},
-  dff:       {label:'D-FF',   w:80, h:60, inputs:[{name:'D',rel:[-40,-15]},{name:'CLK',rel:[-40,15]}], outputs:[{name:'Q',rel:[40,-15]},{name:'Q̄',rel:[40,15]}]},
-  jkff:      {label:'JK-FF',  w:80, h:70, inputs:[{name:'J',rel:[-40,-20]},{name:'CLK',rel:[-40,0]},{name:'K',rel:[-40,20]}], outputs:[{name:'Q',rel:[40,-15]},{name:'Q̄',rel:[40,15]}]},
+  dff:       {label:'D-FF',   w:80, h:80, inputs:[{name:'D',rel:[-40,-20]},{name:'CLK',rel:[-40,0]},{name:'S',rel:[-40,-35]},{name:'R',rel:[-40,35]}], outputs:[{name:'Q',rel:[40,-15]},{name:'Q̄',rel:[40,15]}]},
+  jkff:      {label:'JK-FF',  w:80, h:90, inputs:[{name:'J',rel:[-40,-28]},{name:'CLK',rel:[-40,0]},{name:'K',rel:[-40,28]},{name:'S',rel:[-40,-42]},{name:'R',rel:[-40,42]}], outputs:[{name:'Q',rel:[40,-15]},{name:'Q̄',rel:[40,15]}]},
   sr_latch:  {label:'SR',     w:70, h:60, inputs:[{name:'S',rel:[-35,-15]},{name:'R',rel:[-35,15]}], outputs:[{name:'Q',rel:[35,-15]},{name:'Q̄',rel:[35,15]}]},
   shift4:    {label:'SHIFT4', w:100,h:80, inputs:[{name:'Sin',rel:[-50,-20]},{name:'CLK',rel:[-50,0]},{name:'CLR',rel:[-50,20]}], outputs:[{name:'Q0',rel:[50,-24]},{name:'Q1',rel:[50,-8]},{name:'Q2',rel:[50,8]},{name:'Q3',rel:[50,24]}]},
   shift8_595:{label:'74HC595',w:100,h:100,inputs:[{name:'SER',rel:[-50,-32]},{name:'SRCLK',rel:[-50,-16]},{name:'RCLK',rel:[-50,0]},{name:'SRCLR',rel:[-50,16]},{name:'OE',rel:[-50,32]}], outputs:[{name:'QA',rel:[50,-32]},{name:'QB',rel:[50,-16]},{name:'QC',rel:[50,0]},{name:'QD',rel:[50,16]},{name:'QE',rel:[50,32]},{name:'QH',rel:[50,48]}]},
@@ -630,7 +640,18 @@ function computeOutputs(comp) {
     case 'vcc':  return [1];
     case 'gnd':  return [0];
     case 'switch': return [comp.state?1:0];
+    case 'spdt':   return comp.state?[0,get(0)]:[get(0),0]; // state=false: COM→NO; state=true: COM→NC
     case 'clock':  return [comp.clockVal||0];
+    case 'timer555': {
+      // Simplified 555 model: astable if RST high, TRG<Vcc/3 sets output, THR>2Vcc/3 resets
+      // We use binary: TRG=trigger(active low sets), THR=threshold(active high resets), RST=reset(active low)
+      const rst=get(2), trg=get(0), thr=get(1);
+      if(!rst) { comp.timer555Q=0; }
+      else if(!trg) { comp.timer555Q=1; }  // trigger low → set
+      else if(thr)  { comp.timer555Q=0; }  // threshold high → reset
+      const q=comp.timer555Q||0;
+      return [q, q?0:1]; // OUT, DIS (DIS is open-collector, low when output is low)
+    }
     case 'led': case '7seg': return [];
     case 'mux21': return [get(2)?get(1):get(0)];
     case 'mux41': { const s=get(4)|(get(5)<<1); return [get(s)]; }
@@ -712,18 +733,30 @@ function simStep() {
 
       // Edge-triggered FF logic
       if(c.type==='dff') {
-        const clk=c.inputVals[1]||0;
-        if(clk&&!c.prevClk) c.ffQ=c.inputVals[0]||0;
-        c.prevClk=clk;
+        const s=c.inputVals[2]||0, r=c.inputVals[3]||0;
+        // Async S/R override (active high)
+        if(s&&!r) { c.ffQ=1; }
+        else if(r&&!s) { c.ffQ=0; }
+        else {
+          const clk=c.inputVals[1]||0;
+          if(clk&&!c.prevClk) c.ffQ=c.inputVals[0]||0;
+          c.prevClk=clk;
+        }
       }
       if(c.type==='jkff') {
-        const clk=c.inputVals[1]||0, j=c.inputVals[0]||0, k=c.inputVals[2]||0;
-        if(clk&&!c.prevClk){
-          if(j&&!k) c.ffQ=1;
-          else if(!j&&k) c.ffQ=0;
-          else if(j&&k) c.ffQ=c.ffQ?0:1;
+        const s=c.inputVals[3]||0, r=c.inputVals[4]||0;
+        // Async S/R override (active high)
+        if(s&&!r) { c.ffQ=1; }
+        else if(r&&!s) { c.ffQ=0; }
+        else {
+          const clk=c.inputVals[1]||0, j=c.inputVals[0]||0, k=c.inputVals[2]||0;
+          if(clk&&!c.prevClk){
+            if(j&&!k) c.ffQ=1;
+            else if(!j&&k) c.ffQ=0;
+            else if(j&&k) c.ffQ=c.ffQ?0:1;
+          }
+          c.prevClk=clk;
         }
-        c.prevClk=clk;
       }
       if(c.type==='shift4') {
         const clk=c.inputVals[1]||0;
@@ -806,8 +839,20 @@ function addComponent(type, wx, wy) {
   components.push(c); updateCounts(); return c;
 }
 
-// ── Pin world coords ──
-function pinWorld(comp,pin) { return {x:comp.x+pin.rel[0], y:comp.y+pin.rel[1]}; }
+// ── Pin world coords (rotation-aware) ──
+function rotateRel(rel, rotation) {
+  const [rx, ry] = rel;
+  switch((rotation||0) % 360) {
+    case 90:  return [ ry, -rx];
+    case 180: return [-rx, -ry];
+    case 270: return [-ry,  rx];
+    default:  return [ rx,  ry];
+  }
+}
+function pinWorld(comp, pin) {
+  const [dx, dy] = rotateRel(pin.rel, comp.rotation);
+  return {x: comp.x + dx, y: comp.y + dy};
+}
 function allPins(comp) {
   const def=COMP_DEFS[comp.type], pins=[];
   (comp.inputPins||def.inputs).forEach((p,i)=>pins.push({...p,world:pinWorld(comp,p),isOutput:false,idx:i}));
@@ -870,11 +915,14 @@ function drawComponent(comp) {
   const def=COMP_DEFS[comp.type];
   const sel=selected===comp;
   ctx.save(); ctx.translate(comp.x,comp.y);
+  if(comp.rotation) ctx.rotate(comp.rotation*Math.PI/180);
   if(sel){ctx.shadowColor='#cc2222';ctx.shadowBlur=18/viewScale;}
 
   switch(comp.type){
     case 'switch':  drawSwitch(comp,def.w/2,def.h/2,sel); break;
+    case 'spdt':    drawSPDT(comp,def.w/2,def.h/2,sel); break;
     case 'clock':   drawClock(comp,def.w/2,def.h/2,sel); break;
+    case 'timer555':drawTimer555(comp,def.w/2,def.h/2,sel); break;
     case 'led':     drawLED(comp,def.w/2,def.h/2,sel); break;
     case '7seg':    draw7Seg(comp,def.w/2,def.h/2,sel); break;
     case 'vcc':     drawVCC(comp,def.w/2,def.h/2,sel); break;
@@ -958,6 +1006,36 @@ function drawSwitch(comp,hw,hh,sel){
   ctx.fillStyle='#c8d0e0';ctx.font=`bold ${9/viewScale}px IBM Plex Sans`;ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.fillText(on?'1':'0',0,14/viewScale);
   ctx.fillStyle='#8a93a8';ctx.font=`${8/viewScale}px IBM Plex Sans`;ctx.fillText(comp.name||'SW',0,-14/viewScale);
+}
+function drawSPDT(comp,hw,hh,sel){
+  const on=comp.state;
+  ctx.fillStyle='#2d3344';
+  ctx.strokeStyle=sel?'#00b4d8':'#5a6480'; ctx.lineWidth=1.8/viewScale;
+  ctx.beginPath();ctx.roundRect(-hw,-hh,hw*2,hh*2,6/viewScale);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#8a93a8'; ctx.beginPath();ctx.arc(-hw*0.3,0,4/viewScale,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#5a6480'; ctx.lineWidth=1.5/viewScale;
+  ctx.beginPath();ctx.moveTo(hw*0.1,-hh*0.45);ctx.lineTo(hw*0.65,-hh*0.45);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(hw*0.1, hh*0.45);ctx.lineTo(hw*0.65, hh*0.45);ctx.stroke();
+  const toY=on?hh*0.45:-hh*0.45;
+  ctx.strokeStyle=on?'#f1c40f':'#2ecc71'; ctx.lineWidth=2/viewScale;
+  ctx.beginPath();ctx.moveTo(-hw*0.3,0);ctx.lineTo(hw*0.1,toY);ctx.stroke();
+  ctx.fillStyle='#8a93a8';ctx.font=`${7/viewScale}px IBM Plex Mono`;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('NO',hw*0.35,-hh*0.45-7/viewScale);
+  ctx.fillText('NC',hw*0.35, hh*0.45+7/viewScale);
+  ctx.fillStyle='#c8d0e0';ctx.font=`bold ${8/viewScale}px IBM Plex Sans`;
+  ctx.fillText(comp.name||'SPDT',0,0);
+}
+function drawTimer555(comp,hw,hh,sel){
+  ctx.fillStyle='#2d3344';
+  ctx.strokeStyle=sel?'#cc2222':'#5a6480'; ctx.lineWidth=1.8/viewScale;
+  ctx.beginPath();ctx.roundRect(-hw,-hh,hw*2,hh*2,5/viewScale);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#f1c40f';ctx.font=`bold ${14/viewScale}px IBM Plex Mono`;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('555',0,-10/viewScale);
+  const q=comp.timer555Q||0;
+  ctx.fillStyle=q?'#2ecc71':'#3a4255';
+  ctx.beginPath();ctx.arc(0,8/viewScale,6/viewScale,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#8a93a8';ctx.font=`${7/viewScale}px IBM Plex Mono`;ctx.textAlign='center';
+  ctx.fillText(comp.name||'555',0,hh-6/viewScale);
 }
 function drawClock(comp,hw,hh,sel){
   const v=comp.clockVal||0;
@@ -1164,7 +1242,7 @@ function onMouseUp(){ dragState=null; }
 function onDblClick(e){
   const w=getWorld(e);
   const hitC=hitComp(w.x,w.y);
-  if(hitC&&hitC.type==='switch'){
+  if(hitC&&(hitC.type==='switch'||hitC.type==='spdt')){
     hitC.state=!hitC.state;
     if(simRunning) simStep(); else render();
     showProps(hitC);
@@ -1289,6 +1367,15 @@ function showProps(comp){
     html+=`<div class="prop-row"><div class="prop-label">State</div>
       <button onclick="toggleSwitch()" class="btn btn-primary" style="width:100%;font-size:12px;">${comp.state?'HIGH (1)':'LOW (0)'}</button></div>`;
   }
+  if(comp.type==='spdt'){
+    html+=`<div class="prop-row"><div class="prop-label">Position</div>
+      <button onclick="toggleSwitch()" class="btn btn-primary" style="width:100%;font-size:12px;">${comp.state?'COM → NC':'COM → NO'}</button></div>
+      <div class="prop-row"><div class="prop-label">Tip</div><div class="prop-value" style="font-size:11px;">Double-click to toggle</div></div>`;
+  }
+  if(comp.type==='timer555'){
+    html+=`<div class="prop-row"><div class="prop-label">Output</div><div class="prop-value" style="color:${(comp.timer555Q)?'#2ecc71':'#e74c3c'}">${comp.timer555Q?'HIGH':'LOW'}</div></div>
+      <div class="prop-row"><div class="prop-label">Pins</div><div class="prop-value" style="font-size:10px;">TRG: low=set · THR: high=reset · RST: low=clear</div></div>`;
+  }
   if(comp.type==='counter4'){
     html+=`<div class="prop-row"><div class="prop-label">Count</div><div class="prop-value">${comp.counter||0} (${(comp.counter||0).toString(2).padStart(4,'0')})</div></div>`;
   }
@@ -1299,7 +1386,7 @@ function showProps(comp){
 }
 function updateName(v){if(selected){selected.name=v;render();renderWaveformLabels();}}
 function toggleSwitch(){
-  if(selected&&selected.type==='switch'){
+  if(selected&&(selected.type==='switch'||selected.type==='spdt')){
     selected.state=!selected.state;
     if(simRunning) simStep(); else render();
     showProps(selected);
