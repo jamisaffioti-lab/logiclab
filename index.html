@@ -378,6 +378,7 @@ body {
   <button class="menu-btn" onclick="openSaveModal()">Save</button>
   <button class="menu-btn" onclick="exportJSON()">Export</button>
   <button class="menu-btn" onclick="document.getElementById('import-input').click()">Import</button>
+  <button class="menu-btn" onclick="shareURL()" title="Copy a sharable link to this circuit">🔗 Share</button>
   <input type="file" id="import-input" accept=".json" style="display:none" onchange="importJSON(event)">
   <div class="sep"></div>
   <button class="toolbar-btn" title="Select (V)" id="tool-select" onclick="setTool('select')" style="font-size:14px;">▲</button>
@@ -428,6 +429,10 @@ body {
           <svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" rx="2" fill="none" stroke="#8a93a8" stroke-width="1.3"/><text x="14" y="15" text-anchor="middle" fill="#f1c40f" font-size="12" font-family="monospace">8</text></svg>
           7-Segment
         </div>
+        <div class="comp-item" data-type="hexdisplay">
+          <svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" rx="2" fill="none" stroke="#8a93a8" stroke-width="1.3"/><text x="14" y="15" text-anchor="middle" fill="#00b4d8" font-size="10" font-family="monospace">A</text></svg>
+          Hex Display
+        </div>
         <div class="comp-item" data-type="vcc">
           <svg class="comp-icon" viewBox="0 0 28 20"><line x1="14" y1="18" x2="14" y2="10" stroke="#8a93a8" stroke-width="1.5"/><line x1="8" y1="10" x2="20" y2="10" stroke="#2ecc71" stroke-width="2"/><text x="14" y="8" text-anchor="middle" fill="#2ecc71" font-size="8" font-family="monospace">VCC</text></svg>
           VCC (HIGH)
@@ -463,6 +468,7 @@ body {
         <div class="comp-item" data-type="dff"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="7" font-family="monospace">D-FF</text></svg>D Flip-Flop</div>
         <div class="comp-item" data-type="jkff"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">JK-FF</text></svg>JK Flip-Flop</div>
         <div class="comp-item" data-type="sr_latch"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">SR</text></svg>SR Latch</div>
+        <div class="comp-item" data-type="tff"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="4" y="2" width="20" height="16" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="12" text-anchor="middle" fill="#8a93a8" font-size="7" font-family="monospace">T-FF</text></svg>T Flip-Flop</div>
 
         <div class="comp-category">Registers / Counters</div>
         <div class="comp-item" data-type="shift4"><svg class="comp-icon" viewBox="0 0 28 20"><rect x="2" y="4" width="24" height="12" fill="none" stroke="#8a93a8" stroke-width="1.5"/><text x="14" y="13" text-anchor="middle" fill="#8a93a8" font-size="6" font-family="monospace">SHIFT</text></svg>4-bit Shift Reg</div>
@@ -517,6 +523,19 @@ body {
   <div class="bb-item">Wires: <span id="wire-count">0</span></div>
   <div class="bb-item">Tick: <span id="tick-count">0</span></div>
   <div class="bb-item" id="cursor-pos">X: 0  Y: 0</div>
+</div>
+
+<!-- SHARE MODAL -->
+<div class="modal-overlay" id="share-modal">
+  <div class="modal">
+    <h3>Share Circuit</h3>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">Copy this link and share it. Anyone who opens it will see your circuit loaded.</p>
+    <input type="text" id="share-url-input" readonly style="font-size:11px;" onclick="this.select()">
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="document.getElementById('share-modal').classList.remove('show')">Close</button>
+      <button class="btn btn-primary" onclick="document.getElementById('share-url-input').select();document.execCommand('copy');setStatus('✓ Link copied!');document.getElementById('share-modal').classList.remove('show')">Copy</button>
+    </div>
+  </div>
 </div>
 
 <!-- SAVE MODAL -->
@@ -591,7 +610,7 @@ function snapGrid(v) { return Math.round(v/GRID)*GRID; }
 // ── Component definitions ──
 const COMP_DEFS = {
   switch:    {label:'SW',     w:60, h:40, inputs:[], outputs:[{name:'Q',rel:[30,0]}], category:'io'},
-  spdt:      {label:'SPDT',   w:70, h:50, inputs:[{name:'COM',rel:[-35,0]}], outputs:[{name:'NO',rel:[35,-14]},{name:'NC',rel:[35,14]}], category:'io'},
+  spdt:      {label:'SPDT',   w:70, h:50, inputs:[], outputs:[{name:'NO',rel:[35,-14]},{name:'NC',rel:[35,14]}], category:'io'},
   clock:     {label:'CLK',    w:60, h:40, inputs:[], outputs:[{name:'Q',rel:[30,0]}], category:'io'},
   timer555:  {label:'555',    w:90, h:100, inputs:[{name:'TRG',rel:[-45,-30]},{name:'THR',rel:[-45,0]},{name:'RST',rel:[-45,30]},{name:'CV',rel:[0,50]}], outputs:[{name:'OUT',rel:[45,-20]},{name:'DIS',rel:[45,20]}], category:'io'},
   led:       {label:'LED',    w:50, h:40, inputs:[{name:'A',rel:[-25,0]}], outputs:[], category:'io'},
@@ -617,6 +636,8 @@ const COMP_DEFS = {
   dff:       {label:'D-FF',   w:80, h:80, inputs:[{name:'D',rel:[-40,-20]},{name:'CLK',rel:[-40,0]},{name:'S',rel:[-40,-35]},{name:'R',rel:[-40,35]}], outputs:[{name:'Q',rel:[40,-15]},{name:'Q̄',rel:[40,15]}]},
   jkff:      {label:'JK-FF',  w:80, h:90, inputs:[{name:'J',rel:[-40,-28]},{name:'CLK',rel:[-40,0]},{name:'K',rel:[-40,28]},{name:'S',rel:[-40,-42]},{name:'R',rel:[-40,42]}], outputs:[{name:'Q',rel:[40,-15]},{name:'Q̄',rel:[40,15]}]},
   sr_latch:  {label:'SR',     w:70, h:60, inputs:[{name:'S',rel:[-35,-15]},{name:'R',rel:[-35,15]}], outputs:[{name:'Q',rel:[35,-15]},{name:'Q̄',rel:[35,15]}]},
+  tff:       {label:'T-FF',   w:80, h:70, inputs:[{name:'T',rel:[-40,-20]},{name:'CLK',rel:[-40,0]},{name:'S',rel:[-40,-32]},{name:'R',rel:[-40,32]}], outputs:[{name:'Q',rel:[40,-15]},{name:'Q̄',rel:[40,15]}]},
+  hexdisplay:{label:'HEX',    w:70, h:80, inputs:[{name:'A',rel:[-35,-24]},{name:'B',rel:[-35,-8]},{name:'C',rel:[-35,8]},{name:'D',rel:[-35,24]}], outputs:[], category:'io'},
   shift4:    {label:'SHIFT4', w:100,h:80, inputs:[{name:'Sin',rel:[-50,-20]},{name:'CLK',rel:[-50,0]},{name:'CLR',rel:[-50,20]}], outputs:[{name:'Q0',rel:[50,-24]},{name:'Q1',rel:[50,-8]},{name:'Q2',rel:[50,8]},{name:'Q3',rel:[50,24]}]},
   shift8_595:{label:'74HC595',w:100,h:100,inputs:[{name:'SER',rel:[-50,-32]},{name:'SRCLK',rel:[-50,-16]},{name:'RCLK',rel:[-50,0]},{name:'SRCLR',rel:[-50,16]},{name:'OE',rel:[-50,32]}], outputs:[{name:'QA',rel:[50,-32]},{name:'QB',rel:[50,-16]},{name:'QC',rel:[50,0]},{name:'QD',rel:[50,16]},{name:'QE',rel:[50,32]},{name:'QH',rel:[50,48]}]},
   counter4:  {label:'4-bit CTR',w:90,h:80, inputs:[{name:'CLK',rel:[-45,-20]},{name:'CLR',rel:[-45,0]},{name:'EN',rel:[-45,20]}], outputs:[{name:'Q0',rel:[45,-24]},{name:'Q1',rel:[45,-8]},{name:'Q2',rel:[45,8]},{name:'Q3',rel:[45,24]}]},
@@ -640,7 +661,7 @@ function computeOutputs(comp) {
     case 'vcc':  return [1];
     case 'gnd':  return [0];
     case 'switch': return [comp.state?1:0];
-    case 'spdt':   return comp.state?[0,get(0)]:[get(0),0]; // state=false: COM→NO; state=true: COM→NC
+    case 'spdt':   return comp.state?[0,1]:[1,0]; // state=false: NO=HIGH,NC=LOW; state=true: NO=LOW,NC=HIGH
     case 'clock':  return [comp.clockVal||0];
     case 'timer555': {
       // Simplified 555 model: astable if RST high, TRG<Vcc/3 sets output, THR>2Vcc/3 resets
@@ -683,6 +704,8 @@ function computeOutputs(comp) {
     }
     case 'dff': return [comp.ffQ||0, comp.ffQ?0:1];
     case 'jkff': return [comp.ffQ||0, comp.ffQ?0:1];
+    case 'tff':  return [comp.ffQ||0, comp.ffQ?0:1];
+    case 'hexdisplay': return [];
     case 'sr_latch': {
       const s=a,r=b;
       if(s&&!r) comp.ffQ=1;
@@ -755,6 +778,16 @@ function simStep() {
             else if(!j&&k) c.ffQ=0;
             else if(j&&k) c.ffQ=c.ffQ?0:1;
           }
+          c.prevClk=clk;
+        }
+      }
+      if(c.type==='tff') {
+        const s=c.inputVals[2]||0, r=c.inputVals[3]||0;
+        if(s&&!r) { c.ffQ=1; }
+        else if(r&&!s) { c.ffQ=0; }
+        else {
+          const clk=c.inputVals[1]||0, t=c.inputVals[0]||0;
+          if(clk&&!c.prevClk&&t) c.ffQ=c.ffQ?0:1;
           c.prevClk=clk;
         }
       }
@@ -925,6 +958,7 @@ function drawComponent(comp) {
     case 'timer555':drawTimer555(comp,def.w/2,def.h/2,sel); break;
     case 'led':     drawLED(comp,def.w/2,def.h/2,sel); break;
     case '7seg':    draw7Seg(comp,def.w/2,def.h/2,sel); break;
+    case 'hexdisplay': drawHexDisplay(comp,def.w/2,def.h/2,sel); break;
     case 'vcc':     drawVCC(comp,def.w/2,def.h/2,sel); break;
     case 'gnd':     drawGND(comp,def.w/2,def.h/2,sel); break;
     case 'and': case 'nand': drawAND(comp,def.w/2,def.h/2,sel); break;
@@ -1068,6 +1102,24 @@ function draw7Seg(comp,hw,hh,sel){
   seg(x0+sg,y0,true,s[0]);seg(x0+sw,y0+sg,false,s[1]);seg(x0+sw,y0+sw+sg*2,false,s[2]);
   seg(x0+sg,y0+sw*2+sg*2,true,s[3]);seg(x0-sh,y0+sw+sg*2,false,s[4]);seg(x0-sh,y0+sg,false,s[5]);seg(x0+sg,y0+sw+sg,true,s[6]);
   ctx.fillStyle='#8a93a8';ctx.font=`${7/viewScale}px IBM Plex Sans`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(comp.name||'7SEG',0,hh-6/viewScale);
+}
+function drawHexDisplay(comp,hw,hh,sel){
+  const val=(comp.inputVals||[]).reduce((acc,b,i)=>acc|(b<<i),0)&0xF;
+  const hexChars='0123456789ABCDEF';
+  const segs=[[1,1,1,1,1,1,0],[0,1,1,0,0,0,0],[1,1,0,1,1,0,1],[1,1,1,1,0,0,1],[0,1,1,0,0,1,1],[1,0,1,1,0,1,1],[1,0,1,1,1,1,1],[1,1,1,0,0,0,0],[1,1,1,1,1,1,1],[1,1,1,1,0,1,1],[1,1,1,0,1,1,1],[0,0,1,1,1,1,1],[1,0,0,1,1,1,0],[0,1,1,1,1,0,1],[1,0,0,1,1,1,1],[1,0,0,0,1,1,1]];
+  const s=segs[val];
+  ctx.fillStyle='#1a1a0f';ctx.strokeStyle=sel?'#00b4d8':'#5a6480';ctx.lineWidth=1.8/viewScale;
+  ctx.beginPath();ctx.roundRect(-hw,-hh,hw*2,hh*2,4/viewScale);ctx.fill();ctx.stroke();
+  // Draw 7-seg pattern (same layout as draw7Seg)
+  const x0=-12/viewScale,y0=-26/viewScale,sw=24/viewScale,sh=4/viewScale,sg=2/viewScale;
+  function seg(x,y,horiz,on){ctx.fillStyle=on?'#00b4d8':'#1a2a1a';ctx.beginPath();if(horiz)ctx.roundRect(x,y,sw,sh,1/viewScale);else ctx.roundRect(x,y,sh,sw,1/viewScale);ctx.fill();}
+  seg(x0+sg,y0,true,s[0]);seg(x0+sw,y0+sg,false,s[1]);seg(x0+sw,y0+sw+sg*2,false,s[2]);
+  seg(x0+sg,y0+sw*2+sg*2,true,s[3]);seg(x0-sh,y0+sw+sg*2,false,s[4]);seg(x0-sh,y0+sg,false,s[5]);seg(x0+sg,y0+sw+sg,true,s[6]);
+  // Show hex character
+  ctx.fillStyle='#00b4d8';ctx.font=`bold ${9/viewScale}px IBM Plex Mono`;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(hexChars[val],0,hh-14/viewScale);
+  ctx.fillStyle='#8a93a8';ctx.font=`${7/viewScale}px IBM Plex Sans`;
+  ctx.fillText(comp.name||'HEX',0,hh-5/viewScale);
 }
 function drawVCC(comp,hw,hh,sel){
   ctx.strokeStyle=sel?'#00b4d8':'#2ecc71';ctx.lineWidth=2/viewScale;
@@ -1653,6 +1705,57 @@ function importJSON(e){
   reader.readAsText(file);e.target.value='';
 }
 
+// ── URL sharing ──
+function circuitToHash() {
+  const data = JSON.stringify({components, wires, nextId});
+  // Use base64 encoding; compress by removing whitespace
+  try {
+    return '#c=' + btoa(unescape(encodeURIComponent(data)));
+  } catch(e) { return ''; }
+}
+
+function hashToCircuit(hash) {
+  try {
+    const m = hash.match(/[#&]c=([^&]*)/);
+    if (!m) return null;
+    const data = decodeURIComponent(escape(atob(m[1])));
+    return JSON.parse(data);
+  } catch(e) { return null; }
+}
+
+function shareURL() {
+  const hash = circuitToHash();
+  if (!hash) { setStatus('❌ Circuit too large to share via URL — use Export instead'); return; }
+  const url = location.href.replace(/#.*/,'') + hash;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(()=>{
+      setStatus('✓ Share link copied to clipboard! Paste it to share this circuit.');
+    }).catch(()=>{ promptCopyURL(url); });
+  } else {
+    promptCopyURL(url);
+  }
+}
+
+function promptCopyURL(url) {
+  // Fallback: show modal with the URL for manual copy
+  const el = document.getElementById('share-modal');
+  document.getElementById('share-url-input').value = url;
+  el.classList.add('show');
+  setTimeout(()=>{ document.getElementById('share-url-input').select(); }, 100);
+}
+
+// Load circuit from URL hash on startup
+(function loadFromHash() {
+  const obj = hashToCircuit(location.hash);
+  if (!obj) return;
+  components = obj.components || [];
+  wires = obj.wires || [];
+  nextId = obj.nextId || 1;
+  probes = []; wfHistory = {};
+  selected = null;
+  history.replaceState(null, '', location.pathname); // clean URL
+})();
+
 // ── Keyboard ──
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT') return;
@@ -1679,8 +1782,10 @@ setTool('select');
 loadSavedList();
 renderWaveformLabels();
 if(!storageAvailable){setStatus('⚠️ GullLogic — Storage blocked on this device, use Export/Import to save work');showStorageWarning();}
-else setStatus('Welcome to GullLogic 🐦 — drag components onto the canvas, W=wire, P=probe, Space=simulate');
-render();
+else setStatus('Welcome to GullLogic 🐦 — click a component to place it, W=wire, P=probe, Space=simulate, 🔗=share');
+// If a circuit was loaded from URL hash, fit the view to it
+if(components.length) { render(); fitView(); setStatus('✓ Circuit loaded from shared link!'); }
+else render();
 </script>
 </body>
 </html>
